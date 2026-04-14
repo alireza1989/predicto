@@ -1,0 +1,27 @@
+# Core
+anthropic>=0.80.0
+pydantic>=2.0
+
+# Data
+nba_api>=1.10
+requests>=2.31
+pandas>=2.0
+numpy>=1.24
+pyarrow>=14.0
+
+# ML
+scikit-learn>=1.4
+lightgbm>=4.0
+torch>=2.0
+xgboost>=2.0
+
+# Storage
+duckdb>=0.10
+
+# Web
+flask>=3.0
+
+# Utilities
+pyyaml>=6.0
+python-dotenv>=1.0
+tabulate>=0.9

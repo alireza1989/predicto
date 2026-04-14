@@ -1,0 +1,44 @@
+# Predicto v0 Configuration
+
+# Sport settings
+sport: nba
+seasons:
+  - "2021-22"
+  - "2022-23"
+  - "2023-24"
+  - "2024-25"
+  - "2025-26"
+
+# Prediction horizon (days ahead)
+horizon_days: 14
+
+# Model settings
+models:
+  agent_model: "claude-sonnet-4-20250514"       # For most agents
+  scientist_model: "claude-opus-4-20250514"     # For Meta-Scientist (needs deeper reasoning)
+  max_tokens: 4096
+
+# Polymarket API
+polymarket:
+  gamma_url: "https://gamma-api.polymarket.com"
+  clob_url: "https://clob.polymarket.com"
+  request_delay: 0.5  # seconds between requests
+
+# NBA API
+nba:
+  request_delay: 1.0  # seconds between requests (conservative)
+  timeout: 30
+
+# Experiment settings
+experiments:
+  max_per_run: 5          # max experiments per Meta-Scientist run
+  min_test_samples: 50    # minimum test set size
+  significance_level: 0.05
+
+# Storage
+storage:
+  db_path: "data/predicto.db"
+  raw_dir: "data/raw"
+  features_dir: "data/features"
+  experiments_dir: "data/experiments"
+  reports_dir: "data/reports"

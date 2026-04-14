@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predicto — Multi-Agent Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; overflow-x: hidden; }
+
+  .header { text-align: center; padding: 40px 20px 20px; }
+  .header h1 { font-size: 2.4rem; background: linear-gradient(135deg, #6366f1, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1rem; }
+
+  .section-title { text-align: center; font-size: 1.5rem; color: #a78bfa; margin: 40px 0 20px; font-weight: 600; }
+  .section-subtitle { text-align: center; color: #666; font-size: 0.9rem; margin-top: -12px; margin-bottom: 24px; }
+
+  /* Pipeline flow */
+  .pipeline { display: flex; align-items: flex-start; justify-content: center; gap: 12px; padding: 20px 40px; flex-wrap: wrap; }
+  .agent-card { background: #12121a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 20px; width: 200px; position: relative; transition: all 0.3s; }
+  .agent-card:hover { border-color: #6366f1; transform: translateY(-4px); box-shadow: 0 8px 30px rgba(99,102,241,0.15); }
+  .agent-card .agent-icon { font-size: 2rem; margin-bottom: 10px; }
+  .agent-card h3 { font-size: 1rem; margin-bottom: 4px; color: #fff; }
+  .agent-card .model-badge { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 99px; margin-bottom: 10px; font-weight: 600; }
+  .badge-sonnet { background: #1e3a5f; color: #60a5fa; }
+  .badge-opus { background: #3b1f5e; color: #c084fc; }
+  .agent-card .tools-list { list-style: none; font-size: 0.75rem; color: #888; }
+  .agent-card .tools-list li { padding: 3px 0; border-bottom: 1px solid #1a1a2a; }
+  .agent-card .tools-list li:last-child { border-bottom: none; }
+  .tool-count { font-size: 0.7rem; color: #6366f1; font-weight: 600; margin-bottom: 6px; }
+
+  .arrow { display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #4a4a6a; padding-top: 60px; }
+
+  /* Concepts grid */
+  .concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 0 40px 40px; max-width: 1200px; margin: 0 auto; }
+  .concept-card { background: #12121a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 24px; transition: all 0.3s; }
+  .concept-card:hover { border-color: #6366f1; }
+  .concept-card h3 { font-size: 1.1rem; margin-bottom: 6px; }
+  .concept-card .tag { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 99px; margin-bottom: 10px; font-weight: 600; }
+  .tag-used { background: #1a3a2a; color: #4ade80; }
+  .tag-not-used { background: #3a1a1a; color: #f87171; }
+  .tag-partial { background: #3a3a1a; color: #fbbf24; }
+  .concept-card p { font-size: 0.85rem; color: #999; line-height: 1.6; }
+  .concept-card .detail { font-size: 0.8rem; color: #6366f1; margin-top: 8px; font-style: italic; }
+
+  /* Data flow diagram */
+  .flow-diagram { max-width: 1000px; margin: 0 auto 40px; padding: 0 40px; }
+  .flow-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; justify-content: center; flex-wrap: wrap; }
+  .flow-node { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 10px; padding: 10px 16px; font-size: 0.8rem; text-align: center; min-width: 120px; }
+  .flow-node.external { border-color: #f472b6; color: #f472b6; }
+  .flow-node.storage { border-color: #fbbf24; color: #fbbf24; }
+  .flow-node.agent { border-color: #6366f1; color: #a78bfa; }
+  .flow-node.output { border-color: #4ade80; color: #4ade80; }
+  .flow-arrow { color: #4a4a6a; font-size: 1.2rem; }
+
+  /* Anthropic SDK section */
+  .sdk-box { max-width: 900px; margin: 0 auto 40px; background: #12121a; border: 1px solid #2a2a3a; border-radius: 16px; padding: 28px; }
+  .sdk-box h3 { color: #a78bfa; margin-bottom: 16px; font-size: 1.1rem; }
+  .sdk-code { background: #0a0a12; border-radius: 10px; padding: 16px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.78rem; line-height: 1.7; overflow-x: auto; color: #c9d1d9; }
+  .sdk-code .kw { color: #c084fc; }
+  .sdk-code .fn { color: #60a5fa; }
+  .sdk-code .str { color: #4ade80; }
+  .sdk-code .cmt { color: #555; font-style: italic; }
+  .sdk-code .var { color: #f9a8d4; }
+
+  /* Summary stats */
+  .stats { display: flex; justify-content: center; gap: 30px; padding: 30px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat .label { font-size: 0.8rem; color: #666; margin-top: 4px; }
+
+  .divider { border: none; border-top: 1px solid #1a1a2a; margin: 20px 40px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Predicto Architecture</h1>
+  <p>Multi-Agent AI System for NBA Prediction & Betting-Market Analysis</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num">5</div><div class="label">AI Agents</div></div>
+  <div class="stat"><div class="num">27</div><div class="label">Custom Tools</div></div>
+  <div class="stat"><div class="num">25</div><div class="label">Features</div></div>
+  <div class="stat"><div class="num">60+</div><div class="label">Experiments</div></div>
+  <div class="stat"><div class="num">2</div><div class="label">Claude Models</div></div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════ -->
+<div class="section-title">Agent Pipeline</div>
+<div class="section-subtitle">Sequential orchestration — each agent's output feeds the next</div>
+
+<div class="pipeline">
+  <div class="agent-card">
+    <div class="agent-icon">📡</div>
+    <h3>Data Agent</h3>
+    <span class="model-badge badge-sonnet">Claude Sonnet</span>
+    <div class="tool-count">6 tools</div>
+    <ul class="tools-list">
+      <li>fetch_nba_games</li>
+      <li>fetch_upcoming_nba_games</li>
+      <li>fetch_team_stats</li>
+      <li>search_polymarket_nba</li>
+      <li>enrich_market_orderbooks</li>
+      <li>get_all_nba_teams</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="agent-card">
+    <div class="agent-icon">🔧</div>
+    <h3>Feature Agent</h3>
+    <span class="model-badge badge-sonnet">Claude Sonnet</span>
+    <div class="tool-count">4 tools</div>
+    <ul class="tools-list">
+      <li>load_raw_matchups</li>
+      <li>compute_all_features</li>
+      <li>validate_features</li>
+      <li>get_feature_info</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="agent-card" style="border-color: #7c3aed;">
+    <div class="agent-icon">🧬</div>
+    <h3>Meta-Scientist</h3>
+    <span class="model-badge badge-opus">Claude Opus</span>
+    <div class="tool-count">7 tools</div>
+    <ul class="tools-list">
+      <li>get_available_methods</li>
+      <li>get_experiment_history</li>
+      <li>get_feature_columns</li>
+      <li>run_experiment</li>
+      <li>run_ensemble</li>
+      <li>run_feature_ablation</li>
+      <li>analyze_prediction_errors</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="agent-card">
+    <div class="agent-icon">⚖️</div>
+    <h3>Eval Agent</h3>
+    <span class="model-badge badge-sonnet">Claude Sonnet</span>
+    <div class="tool-count">5 tools</div>
+    <ul class="tools-list">
+      <li>get_experiment_results</li>
+      <li>compare_experiments</li>
+      <li>evaluate_against_baselines</li>
+      <li>compute_calibration</li>
+      <li>make_promotion_decision</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="agent-card">
+    <div class="agent-icon">📊</div>
+    <h3>Report Agent</h3>
+    <span class="model-badge badge-sonnet">Claude Sonnet</span>
+    <div class="tool-count">5 tools</div>
+    <ul class="tools-list">
+      <li>get_promoted_model</li>
+      <li>get_all_experiment_summary</li>
+      <li>get_upcoming_predictions</li>
+      <li>get_market_data</li>
+      <li>save_report</li>
+    </ul>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════ -->
+<div class="section-title">Data Flow</div>
+
+<div class="flow-diagram">
+  <div class="flow-row">
+    <div class="flow-node external">nba_api<br><small>stats.nba.com</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Data Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node storage">data/raw/*.parquet</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Feature Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node storage">data/features/*.parquet</div>
+  </div>
+  <div class="flow-row" style="margin-top: 16px;">
+    <div class="flow-node external">Polymarket API<br><small>Gamma + CLOB</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Data Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node storage">polymarket*.parquet</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Report Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node output">Market Comparison</div>
+  </div>
+  <div class="flow-row" style="margin-top: 16px;">
+    <div class="flow-node storage">feature_matrix.parquet</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Meta-Scientist</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node storage">predicto.db + artifacts/</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Eval Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node output">Promoted Model</div>
+  </div>
+  <div class="flow-row" style="margin-top: 16px;">
+    <div class="flow-node storage">All Results</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node agent">Report Agent</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node output">data/reports/*.md</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════ -->
+<div class="section-title">Agentic Loop — Core Pattern</div>
+<div class="section-subtitle">The Anthropic SDK tool-use loop powering every agent</div>
+
+<div class="sdk-box">
+  <div class="sdk-code">
+    <span class="cmt"># agents/base.py — the heart of the system</span><br><br>
+    <span class="kw">while</span> iterations &lt; self.max_iterations:<br>
+    &nbsp;&nbsp;<span class="var">response</span> = self.client.<span class="fn">messages.create</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;model=<span class="str">self.model</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># "claude-sonnet-4-20250514" or "claude-opus-4-20250514"</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;max_tokens=<span class="str">self.max_tokens</span>,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;system=<span class="str">self.system_prompt</span>,&nbsp;<span class="cmt"># Role-specific instructions</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;tools=<span class="str">self.tool_schemas</span>,&nbsp;&nbsp;<span class="cmt"># JSON tool definitions (name, description, input_schema)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;messages=<span class="str">self.messages</span>,&nbsp;&nbsp;&nbsp;<span class="cmt"># Full conversation history</span><br>
+    &nbsp;&nbsp;)<br><br>
+    &nbsp;&nbsp;<span class="kw">if</span> response.<span class="fn">stop_reason</span> == <span class="str">"end_turn"</span>:&nbsp;&nbsp;<span class="cmt"># Agent decided it's done</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">break</span><br><br>
+    &nbsp;&nbsp;<span class="kw">for</span> block <span class="kw">in</span> response.content:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> block.type == <span class="str">"tool_use"</span>:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = tool.<span class="fn">execute</span>(block.input)&nbsp;&nbsp;<span class="cmt"># Run the Python function</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;messages.<span class="fn">append</span>({<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"role"</span>: <span class="str">"user"</span>,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"content"</span>: [{<span class="str">"type"</span>: <span class="str">"tool_result"</span>, <span class="str">"tool_use_id"</span>: block.id, <span class="str">"content"</span>: result}]<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;})<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># Loop continues — Claude sees result, decides next action</span>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════ -->
+<div class="section-title">Claude Code Concepts — What We Used vs. What's Available</div>
+<div class="section-subtitle">Mapping Predicto to the Claude / Anthropic ecosystem</div>
+
+<div class="concepts">
+
+  <div class="concept-card">
+    <h3>Anthropic Python SDK — Tool Use</h3>
+    <span class="tag tag-used">✓ USED — Core Pattern</span>
+    <p>Every agent is powered by <code>anthropic.Anthropic().messages.create()</code> with <code>tools=</code> parameter. Claude sees tool schemas, decides which to call, receives results, and iterates. This is the <strong>manual agentic loop</strong> — the foundational building block.</p>
+    <div class="detail">agents/base.py → Agent class, 27 tools across 5 agents</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Multi-Agent Orchestration</h3>
+    <span class="tag tag-used">✓ USED — Sequential Pipeline</span>
+    <p>5 specialized agents run in sequence, each with its own system prompt, tools, and model. The orchestrator (<code>main.py</code>) passes context summaries between agents. Each agent autonomously decides how to use its tools.</p>
+    <div class="detail">main.py → run_pipeline() chains Data → Feature → Meta-Scientist → Eval → Report</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Multi-Model Strategy</h3>
+    <span class="tag tag-used">✓ USED — Sonnet + Opus</span>
+    <p><strong>Claude Sonnet</strong> for routine agents (data, features, eval, report) — fast and cost-effective. <strong>Claude Opus</strong> for Meta-Scientist — needs deeper reasoning to design experiments, interpret results, and decide what to try next.</p>
+    <div class="detail">config.yaml → agent_model vs scientist_model</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Tool Definitions (JSON Schema)</h3>
+    <span class="tag tag-used">✓ USED — 27 Custom Tools</span>
+    <p>Each tool is defined with name, description, and <code>input_schema</code> (JSON Schema). The SDK sends these to Claude, which returns structured <code>tool_use</code> blocks with validated inputs. Our <code>Tool</code> class wraps Python functions with schema metadata.</p>
+    <div class="detail">agents/base.py → Tool dataclass with execute() method</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>System Prompts (Role Engineering)</h3>
+    <span class="tag tag-used">✓ USED — Per-Agent Personas</span>
+    <p>Each agent has a tailored system prompt defining its role, expertise, and workflow. The Meta-Scientist prompt specifies experiment order and scientific method. The Eval Agent prompt defines promotion criteria. This is how we give each agent its "personality."</p>
+    <div class="detail">Each agent file defines SYSTEM_PROMPT with specific instructions</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Conversation Memory (In-Context)</h3>
+    <span class="tag tag-used">✓ USED — Message History</span>
+    <p>Each agent maintains its full message history within a run. The Meta-Scientist uses this to remember which experiments it already ran and plan the next one. Cross-agent memory is handled via SQLite (experiment_log table) and passed summaries.</p>
+    <div class="detail">Agent.messages list + tools/storage.py get_experiment_history()</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Claude Code (CLI) — The Builder</h3>
+    <span class="tag tag-used">✓ USED — Built Everything</span>
+    <p>Claude Code (this tool, me!) designed the architecture, wrote all code, debugged issues, ran the pipeline, and generated reports. I used my own tools: Read, Write, Edit, Bash, Grep, Glob, Agent subagents. The entire project was built in one conversation.</p>
+    <div class="detail">Claude Code orchestrated the creation of the system it designed</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>MCP (Model Context Protocol)</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>MCP allows Claude to connect to external tools/services via standardized servers (databases, APIs, file systems). Predicto calls APIs directly via Python. <strong>Future:</strong> could expose nba_api and Polymarket as MCP servers for real-time tool access.</p>
+    <div class="detail">Available but not needed — direct Python API calls suffice for PoC</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Claude Agent SDK (claude_agent_sdk)</h3>
+    <span class="tag tag-not-used">✗ NOT USED — Built From Scratch</span>
+    <p>Anthropic's Agent SDK provides higher-level abstractions (AgentRunner, handoffs, guardrails). We built our own minimal agent loop directly on the Messages API for full control. <strong>Future:</strong> migrating to Agent SDK would add built-in guardrails and handoff patterns.</p>
+    <div class="detail">We implemented a subset of Agent SDK patterns manually in base.py</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Agent Handoffs / Delegation</h3>
+    <span class="tag tag-partial">~ PARTIAL</span>
+    <p>Agent SDK supports dynamic handoffs where one agent delegates to another mid-conversation. Predicto uses <strong>static sequential orchestration</strong> — main.py controls the flow. Agents don't call each other directly, but pass context via the orchestrator.</p>
+    <div class="detail">main.py passes summaries — not true dynamic handoffs</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Subagents / Agent Teams</h3>
+    <span class="tag tag-partial">~ PARTIAL</span>
+    <p>Claude Code's "Agent" tool spawns subagents for parallel work. Predicto's agents are conceptually a <strong>team of specialists</strong>, but they run sequentially, not as Claude Code subagents. <strong>Future:</strong> Data + Feature agents could run in parallel.</p>
+    <div class="detail">Sequential team, not parallel subagents</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Skills / Slash Commands</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>Claude Code skills are reusable prompt templates invoked via <code>/command</code>. Predicto doesn't define custom skills. <strong>Future:</strong> could create <code>/predict</code>, <code>/experiment</code>, <code>/report</code> skills for quick access to pipeline stages.</p>
+    <div class="detail">Could wrap each agent as a Claude Code skill</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Extended Thinking</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>Claude's extended thinking mode enables deeper chain-of-thought reasoning before responding. Could improve Meta-Scientist's experiment design by letting it reason more carefully about which experiments to try next.</p>
+    <div class="detail">Would benefit Meta-Scientist's experimental design decisions</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Prompt Caching</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>The Anthropic API supports caching system prompts and tool definitions to reduce latency and cost on repeated calls. Since each agent makes 5-30 API calls with the same system prompt, caching would significantly reduce token costs.</p>
+    <div class="detail">Each agent's system prompt + tools are identical across iterations</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Streaming</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>The SDK supports streaming responses for real-time output. Predicto waits for complete responses. <strong>Future:</strong> streaming would let users see agent reasoning in real-time during long experiment runs.</p>
+    <div class="detail">Would improve UX for Meta-Scientist's long-running sessions</div>
+  </div>
+
+  <div class="concept-card">
+    <h3>Hooks (Claude Code)</h3>
+    <span class="tag tag-not-used">✗ NOT USED</span>
+    <p>Claude Code hooks run shell commands in response to events (pre-tool, post-tool). Could be used to auto-validate data after fetch, or trigger alerts when experiments complete. Not needed for this PoC.</p>
+    <div class="detail">Could trigger notifications on experiment completion</div>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- ════════════════════════════════════════ -->
+<div class="section-title">Self-Improvement Loop</div>
+<div class="section-subtitle">How the Meta-Scientist learns from past experiments</div>
+
+<div class="sdk-box">
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+    <div style="flex: 1; min-width: 280px;">
+      <h3 style="color: #f472b6; margin-bottom: 12px;">Iteration 1</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8; color: #999;">
+        → No history exists<br>
+        → Try all 5 methods systematically<br>
+        → LR + NN perform best<br>
+        → Tree methods overfit<br>
+        → Run first ensemble<br>
+        <strong style="color: #4ade80;">Best: 0.632 log loss</strong>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 280px;">
+      <h3 style="color: #a78bfa; margin-bottom: 12px;">Iteration 2</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8; color: #999;">
+        → Reads history: "trees overfit"<br>
+        → Focus on LR + NN variants<br>
+        → Try feature ablation<br>
+        → Discover Elo-only is optimal<br>
+        → Try focused ensembles<br>
+        <strong style="color: #4ade80;">Best: 0.628 log loss</strong>
+      </div>
+    </div>
+    <div style="flex: 1; min-width: 280px;">
+      <h3 style="color: #6366f1; margin-bottom: 12px;">Iteration 3</h3>
+      <div style="font-size: 0.85rem; line-height: 1.8; color: #999;">
+        → Reads full history (40+ exps)<br>
+        → Skip trees entirely<br>
+        → Elo-only LR+NN ensemble<br>
+        → Error analysis to find edges<br>
+        → Confirm convergence<br>
+        <strong style="color: #4ade80;">Best: 0.6269 log loss ★</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; padding: 40px 20px; color: #444; font-size: 0.8rem;">
+  Built with Claude Code (Opus 4.6) — Anthropic SDK + Tool Use Agentic Loop<br>
+  Multi-agent system designed, coded, debugged, and operated in a single conversation
+</div>
+
+</body>
+</html>

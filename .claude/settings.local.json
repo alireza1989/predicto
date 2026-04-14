@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.polymarket.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(python3 -m venv .venv)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(python -c \":*)",
+      "Bash(grep -n \"Tool\\(\" agents/*.py)",
+      "Bash(python3 main.py --skip-data --verbose)",
+      "Bash(source /Users/alireza/Documents/projects/predicto/.venv/bin/activate)",
+      "Bash(python3 main.py)",
+      "Bash(python3 main.py --skip-data)",
+      "Bash(python3 -c \":*)",
+      "Bash(sqlite3 /Users/alireza/Documents/projects/predicto/data/predicto.db \"SELECT COUNT\\(*\\) FROM experiment_log; SELECT COUNT\\(*\\) FROM run_log;\")",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -c \"import flask; print\\(flask.__version__\\)\")",
+      "Bash(python3 -c \"import anthropic; print\\(anthropic.__file__\\)\")",
+      "Bash(/Users/alireza/Documents/projects/predicto/.venv/bin/pip install:*)",
+      "Bash(ls /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_*.html)",
+      "Bash(/Users/alireza/Documents/projects/predicto/.venv/bin/python -c \" import sqlite3 conn = sqlite3.connect\\('/Users/alireza/Documents/projects/predicto/data/predicto.db'\\) exps = conn.execute\\('SELECT COUNT\\(*\\) FROM experiment_log'\\).fetchone\\(\\)[0] runs = conn.execute\\('SELECT COUNT\\(*\\) FROM run_log'\\).fetchone\\(\\)[0] print\\(f'DB: {exps} experiments, {runs} runs'\\) conn.close\\(\\) \")",
+      "Bash(/Users/alireza/Documents/projects/predicto/.venv/bin/python -c ':*)",
+      "Bash(grep -o 'best_acc.*%' /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter5_*.html)",
+      "Bash(grep -c 'circle cx=' /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter5_*.html)",
+      "Bash(grep 'cy=\"228\"' /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter5_*.html)",
+      "Bash(grep 'circle' /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter5_*.html)",
+      "Bash(python3)",
+      "Bash(rm -rf /Users/alireza/Documents/projects/predicto/data/experiments/*)",
+      "Bash(rm -f /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_*.html)",
+      "Bash(grep -r \"player\" /Users/alireza/Documents/projects/predicto/tools/*.py)",
+      "Bash(python3 -c \"from nba_api.stats import endpoints; import inspect; members = inspect.getmembers\\(endpoints, inspect.isclass\\); player_endpoints = [m for m in members if 'player' in m[0].lower\\(\\)]; print\\('\\\\\\\\n'.join\\([m[0] for m in player_endpoints[:20]]\\)\\)\")",
+      "Bash(grep -l \"injury\\\\|lineup\\\\|starter\" /Users/alireza/Documents/projects/predicto/.venv/lib/python3.9/site-packages/nba_api/stats/endpoints/*.py)"
+    ]
+  }
+}

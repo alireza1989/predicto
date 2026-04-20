@@ -358,3 +358,55 @@ After 7 rounds of systematic experimentation across 50+ models:
 - Further improvements require new data sources (injuries, lineups, etc.)
 
 The model has reached its performance ceiling with available features.
+
+---
+
+## Run — 2026-04-14 17:44
+
+## Run 8: Validation and Feature Minimalism Testing
+
+### What Was Tried:
+1. **Verify Best Model** (LR C=0.01, 14 features): 0.6179 log loss ✓ Confirmed stability
+2. **Extreme Minimal** (4 features only): 0.6197 log loss - surprisingly good
+3. **Polynomial Features** (6 features, C=0.005): 0.6211 log loss - no improvement
+4. **Pure Elo Model** (4 Elo features): 0.6239 log loss - confirms recent form matters
+5. **Pace-Adjusted Features** (14 features): 0.6185 log loss - pace doesn't help
+
+### Key Results:
+- **Best Model Confirmed**: LR with C=0.01 and 14 features consistently achieves 0.6174-0.6179 log loss
+- **Extreme Minimalism Works**: Just 4 features (elo_diff, home/away_net_pts_10, home_is_b2b) achieves 0.6197
+- **Feature Engineering Fails**: Polynomial features and pace adjustments don't improve performance
+- **Elo Alone Insufficient**: Pure Elo model (0.6239) significantly worse than Elo + recent form
+
+### What Worked:
+- Model stability confirmed across multiple runs
+- 4-feature model provides excellent simplicity/performance tradeoff
+- Core features remain: Elo + recent net points + back-to-back status
+
+### What Didn't Work:
+- Polynomial feature engineering
+- Stronger regularization (C=0.005)
+- Pace-adjusted features
+- Any deviation from the core feature set
+
+### Final Production Recommendations:
+**Option 1 - Maximum Performance**: 
+- 14-feature LR model with C=0.01 (0.6174 log loss)
+- Use when accuracy is paramount
+
+**Option 2 - Extreme Simplicity** (Recommended):
+- 4-feature model: elo_diff, home_net_pts_10, away_net_pts_10, home_is_b2b
+- 0.6197 log loss (only 0.0023 worse)
+- Much easier to maintain and explain
+
+### Definitive Conclusions After 8 Rounds:
+1. **Logistic Regression with C=0.01** is definitively optimal
+2. **4-14 features** capture all available signal; more features add noise
+3. **Simple beats complex** consistently on this problem
+4. **Performance ceiling reached** at ~0.617 log loss with current data
+
+### Next Steps:
+- Deploy 4-feature model to production
+- Monitor real-world performance
+- Only new data sources (injuries, lineups, weather) can improve further
+- Consider real-time probability updates during games

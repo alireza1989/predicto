@@ -526,7 +526,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   <div class="two-col">
     <div class="chart-card">
       <div class="section-label" style="margin-bottom:8px;">Convergence — Best Log Loss per Iteration</div>
-      {{ chart_svg }}
+      {{ chart_svg | safe }}
     </div>
     <div class="chart-card">
       <div class="section-label" style="margin-bottom:14px;">Experiments by Method</div>

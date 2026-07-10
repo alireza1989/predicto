@@ -182,6 +182,22 @@ After all experiments:
     logger.info(f"Eval Agent completed. Tool calls: {result['tool_calls']}")
     print(f"\n--- Eval Agent Summary ---\n{result['response'][:1000]}\n")
 
+    # ── Step 4.5: Critic (red-team audit of the promotion) ──────────────
+    logger.info("\n" + "="*60)
+    logger.info("STEP 4.5: Critic Agent")
+    logger.info("="*60)
+
+    from agents.critic_agent import create_critic_agent
+    critic = create_critic_agent(config)
+    result = critic.run(
+        "Audit the current promotion candidate. Follow your procedure exactly: "
+        "get the candidate, run the red-flag audit, run the significance test "
+        "against the incumbent (or runner-up), and record your verdict."
+    )
+    agent_results["critic"] = result
+    logger.info(f"Critic completed. Tool calls: {result['tool_calls']}")
+    print(f"\n--- Critic Verdict ---\n{result['response'][:800]}\n")
+
     # ── Step 5: Report Generation ────────────────────────────────────────
     logger.info("\n" + "="*60)
     logger.info("STEP 5: Report Agent")
@@ -195,6 +211,7 @@ After all experiments:
         "feature_summary": agent_results.get("feature_agent", {}).get("response", "")[:500],
         "scientist_summary": agent_results.get("meta_scientist", {}).get("response", "")[:1000],
         "eval_summary": agent_results.get("eval_agent", {}).get("response", "")[:500],
+        "critic_verdict": agent_results.get("critic", {}).get("response", "")[:500],
     }
 
     result = report_agent.run(

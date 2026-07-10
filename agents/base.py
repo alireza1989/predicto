@@ -167,7 +167,20 @@ class Agent:
                         "content": result,
                     })
 
-            messages.append({"role": "user", "content": tool_results})
+            if tool_results:
+                messages.append({"role": "user", "content": tool_results})
+            else:
+                # Stopped without end_turn and without tool calls (e.g.
+                # max_tokens cut the response mid-thought). An empty user
+                # message would 400 — nudge the model to wrap up instead.
+                logger.warning(
+                    f"[{self.name}] stop_reason={response.stop_reason} with no "
+                    f"tool calls — asking model to finish"
+                )
+                messages.append({
+                    "role": "user",
+                    "content": "Your previous response was cut off. Finish your remaining work and give your conclusion concisely.",
+                })
 
         # Max iterations reached
         logger.warning(f"[{self.name}] Hit max iterations ({self.max_iterations})")

@@ -243,6 +243,13 @@ After all experiments:
     logger.info(f"Pipeline Complete: {summary}")
     logger.info(f"{'='*60}")
 
+    # A run where no agent made a single tool call means nothing actually
+    # happened (bad API key, retired model, etc.) — fail loudly so CI goes
+    # red instead of reporting a false success.
+    if agent_results and total_tool_calls == 0:
+        logger.error("All agents completed with 0 tool calls — treating run as FAILED")
+        sys.exit(1)
+
     return agent_results
 
 

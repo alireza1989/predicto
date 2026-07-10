@@ -4876,3 +4876,64 @@ Your goal: find the metho...
 ============================================================
 2026-04-20 08:45:48,427 [predicto] INFO: Pipeline Complete: Pipeline completed in 297s. Agents: 4, Total tool calls: 24
 2026-04-20 08:45:48,427 [predicto] INFO: ============================================================
+2026-07-10 09:31:26,633 [predicto] INFO: ============================================================
+2026-07-10 09:31:26,633 [predicto] INFO: Predicto Pipeline Run: bb89a79b
+2026-07-10 09:31:26,633 [predicto] INFO: Started: 2026-07-10T09:31:26.633846
+2026-07-10 09:31:26,634 [predicto] INFO: ============================================================
+2026-07-10 09:31:28,137 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:31:28,298 [predicto] INFO: Skipping data collection (--skip-data)
+2026-07-10 09:31:28,995 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:31:28,999 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 09:31:29,522 [tools.market] INFO: Settled 0 outcomes, 0 paper trades
+2026-07-10 09:31:29,527 [predicto] INFO: Market ops: settled {'outcomes': 0, 'trades_settled': 0}
+2026-07-10 09:31:29,527 [tools.polymarket] INFO: Fetching NBA game markets from Polymarket
+2026-07-10 09:31:30,612 [tools.polymarket] INFO:   Found 0 NBA game markets with moneyline prices
+2026-07-10 09:31:30,613 [tools.market] INFO: No active Polymarket NBA game markets
+2026-07-10 09:31:30,614 [predicto] INFO: Market ops: odds snapshot {'snapshots': 0, 'markets': 0}
+2026-07-10 09:31:30,614 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:30,614 [predicto] INFO: STEP 2: Feature Engineering Agent
+2026-07-10 09:31:30,614 [predicto] INFO: ============================================================
+2026-07-10 09:31:30,634 [agents.base] INFO: [feature_agent] Starting task: Compute and validate all features from the raw NBA matchup data. Check for data quality issues and p...
+2026-07-10 09:31:30,913 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 404 Not Found"
+2026-07-10 09:31:30,915 [agents.base] ERROR: [feature_agent] API call failed: Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-sonnet-4-20250514'}, 'request_id': 'req_011CctTdLbQG1NjwbR4sWjuX'}
+2026-07-10 09:31:30,915 [predicto] INFO: Feature Agent completed. Tool calls: 0
+2026-07-10 09:31:30,915 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:30,915 [predicto] INFO: STEP 3: Meta-Scientist Agent
+2026-07-10 09:31:30,915 [predicto] INFO: ============================================================
+2026-07-10 09:31:30,920 [agents.base] INFO: [meta_scientist] Starting task: Design and run up to 5 experiments to find the best NBA prediction model.
+
+Your goal: find the metho...
+2026-07-10 09:31:31,061 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 404 Not Found"
+2026-07-10 09:31:31,061 [agents.base] ERROR: [meta_scientist] API call failed: Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-opus-4-20250514'}, 'request_id': 'req_011CctTdMZwk71FoPXo4n5v4'}
+2026-07-10 09:31:31,061 [predicto] INFO: Meta-Scientist completed. Tool calls: 0
+2026-07-10 09:31:31,062 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:31,062 [predicto] INFO: STEP 4: Evaluation Agent
+2026-07-10 09:31:31,062 [predicto] INFO: ============================================================
+2026-07-10 09:31:31,067 [agents.base] INFO: [eval_agent] Starting task: Evaluate all completed experiments. Compare them side by side. Check calibration of the best model. ...
+2026-07-10 09:31:31,216 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 404 Not Found"
+2026-07-10 09:31:31,218 [agents.base] ERROR: [eval_agent] API call failed: Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-sonnet-4-20250514'}, 'request_id': 'req_011CctTdNDPKA2Bv7XsGBn9G'}
+2026-07-10 09:31:31,218 [predicto] INFO: Eval Agent completed. Tool calls: 0
+2026-07-10 09:31:31,218 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:31,218 [predicto] INFO: STEP 4.5: Critic Agent
+2026-07-10 09:31:31,218 [predicto] INFO: ============================================================
+2026-07-10 09:31:31,226 [agents.base] INFO: [critic] Starting task: Audit the current promotion candidate. Follow your procedure exactly: get the candidate, run the red...
+2026-07-10 09:31:31,434 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 404 Not Found"
+2026-07-10 09:31:31,436 [agents.base] ERROR: [critic] API call failed: Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-sonnet-4-20250514'}, 'request_id': 'req_011CctTdP3FMqTfiKhpFKjin'}
+2026-07-10 09:31:31,436 [predicto] INFO: Critic completed. Tool calls: 0
+2026-07-10 09:31:31,436 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:31,436 [predicto] INFO: STEP 5: Report Agent
+2026-07-10 09:31:31,436 [predicto] INFO: ============================================================
+2026-07-10 09:31:31,449 [agents.base] INFO: [report_agent] Starting task: Generate the final Predicto analysis report. IMPORTANT: Use compute_betting_edges to compare model p...
+2026-07-10 09:31:31,607 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 404 Not Found"
+2026-07-10 09:31:31,609 [agents.base] ERROR: [report_agent] API call failed: Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-sonnet-4-20250514'}, 'request_id': 'req_011CctTdPsrDxeuFquV9jtdY'}
+2026-07-10 09:31:31,609 [predicto] INFO: Report Agent completed. Tool calls: 0
+2026-07-10 09:31:32,264 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:31:32,445 [predicto] INFO: 
+============================================================
+2026-07-10 09:31:32,446 [predicto] INFO: Pipeline Complete: Pipeline completed in 5s. Agents: 5, Total tool calls: 0
+2026-07-10 09:31:32,446 [predicto] INFO: ============================================================

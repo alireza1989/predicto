@@ -304,6 +304,6 @@ def create_data_agent(config: dict) -> Agent:
         name="data_agent",
         system_prompt=SYSTEM_PROMPT,
         tools=_build_tools(config),
-        model=config.get("models", {}).get("agent_model", "claude-sonnet-4-20250514"),
+        model=config.get("models", {}).get("agent_model", "claude-sonnet-5"),
         max_tokens=config.get("models", {}).get("max_tokens", 4096),
     )

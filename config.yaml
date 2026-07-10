@@ -14,9 +14,9 @@ horizon_days: 14
 
 # Model settings
 models:
-  agent_model: "claude-sonnet-4-20250514"       # For most agents
-  scientist_model: "claude-opus-4-20250514"     # For Meta-Scientist (needs deeper reasoning)
-  max_tokens: 4096
+  agent_model: "claude-sonnet-5"       # For most agents (adaptive thinking on by default)
+  scientist_model: "claude-opus-4-8"   # For Meta-Scientist + Critic (deeper reasoning)
+  max_tokens: 8192   # headroom: Sonnet 5 adaptive thinking counts toward max_tokens
 
 # Polymarket API
 polymarket:

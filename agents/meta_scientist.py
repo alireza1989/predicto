@@ -545,7 +545,7 @@ def create_meta_scientist(config: dict) -> Agent:
         name="meta_scientist",
         system_prompt=SYSTEM_PROMPT,
         tools=_build_tools(config),
-        model=config.get("models", {}).get("scientist_model", "claude-opus-4-20250514"),
+        model=config.get("models", {}).get("scientist_model", "claude-opus-4-8"),
         max_tokens=config.get("models", {}).get("max_tokens", 4096),
         max_iterations=30,  # needs more iterations to run multiple experiments
     )

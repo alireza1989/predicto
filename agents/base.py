@@ -59,7 +59,7 @@ class Agent:
         name: str,
         system_prompt: str,
         tools: list[Tool],
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-sonnet-5",
         max_tokens: int = 4096,
         max_iterations: int = 20,
     ):

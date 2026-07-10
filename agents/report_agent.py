@@ -165,6 +165,20 @@ def _build_tools(config: dict) -> list[Tool]:
                 "market_teams": game_markets[["team_a", "team_b"]].head(10).to_dict(orient="records"),
             })
 
+        # Record every matched prediction + open paper trades (CLV ledger).
+        # Best-effort: the report must still generate if the ledger write fails.
+        try:
+            from tools import market
+            ledger_conn = storage.init_db()
+            market.record_predictions_and_trades(
+                ledger_conn, edges_df,
+                experiment_id=best["experiment_id"],
+                model_desc=f"{best['method']} ({best['metrics']['log_loss']:.4f} LL)",
+            )
+            ledger_conn.close()
+        except Exception as e:
+            logger.warning(f"Prediction ledger write failed: {e}")
+
         # Prepare result
         edges_list = []
         for _, row in edges_df.iterrows():

@@ -102,6 +102,23 @@ def run_pipeline(config: dict, skip_data: bool = False, skip_markets: bool = Fal
     else:
         logger.info("Skipping data collection (--skip-data)")
 
+    # ── Step 1.5: Deterministic market ops (no LLM) ──────────────────────
+    # Settle past predictions against fresh results and capture an odds
+    # snapshot. Best-effort: never blocks the pipeline.
+    try:
+        from tools import market, storage as _storage
+        conn = init_db()
+        results = _storage.load_latest_parquet("data/raw", "nba_matchups")
+        if not results.empty:
+            settled = market.settle_open_items(conn, results)
+            logger.info(f"Market ops: settled {settled}")
+        if not skip_markets:
+            snap = market.snapshot_polymarket_odds(conn)
+            logger.info(f"Market ops: odds snapshot {snap}")
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Market ops step failed (non-fatal): {e}")
+
     # ── Step 2: Feature Engineering ──────────────────────────────────────
     logger.info("\n" + "="*60)
     logger.info("STEP 2: Feature Engineering Agent")

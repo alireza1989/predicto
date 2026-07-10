@@ -2,11 +2,20 @@
 
 An autonomous, multi-agent system that predicts NBA game outcomes using machine learning, then compares those predictions against live Polymarket betting odds to surface potential mispricings. The system is self-improving: it runs experiments, learns from results, and converges toward better models across iterations — without human intervention.
 
+## Live demo
+
+**Dashboard:** https://predicto-dashboard.vercel.app/?token=predicto-demo-2026
+
+The dashboard is token-gated to keep random visitors and crawlers out — the link
+above includes the demo token (`predicto-demo-2026`). If you can see this repo,
+you're welcome in. (You can also open the bare URL and paste the token into the
+gate page; access persists via cookie for 30 days.)
+
 > **Platform upgrade (July 2026)** — Predicto is now a production meta data-scientist
 > platform. See [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the full roadmap. Highlights:
 >
 > - **Neon Postgres** is the production store (`DATABASE_URL`; SQLite fallback locally)
-> - **Live dashboard** (Next.js on Vercel): https://predicto-dashboard.vercel.app
+> - **Live dashboard** (Next.js on Vercel) — link above
 > - **Prediction ledger + CLV**: every prediction is recorded with the market price at
 >   that moment; paper trades (¼-Kelly) settle against closing lines — the
 >   industry-standard test of real edge
@@ -60,45 +69,66 @@ After 36+ experiments across 5 iterations, the system converged on:
 
 ## Architecture
 
-The system is composed of five autonomous agents that run sequentially. Each agent has its own tools, a Claude model backing it, and a well-defined input/output contract:
+Three layers: **compute** (the agent pipeline, running on GitHub Actions nightly or
+locally), **data** (Neon Postgres — the single source of truth; SQLite fallback when
+`DATABASE_URL` is unset), and **presentation** (the Next.js dashboard on Vercel,
+read-only). Vercel never runs the pipeline — its function limits can't hold a
+15-minute multi-agent run; it only renders whatever is in Neon.
+
+Six autonomous agents run sequentially. Each has its own tools, a Claude model
+backing it, and a well-defined input/output contract:
 
 ```
 ┌──────────────────┐
-│  Data Agent      │  Fetches NBA results (6,075 games, 2021–26) + upcoming schedule
-│                  │  + Polymarket live odds
+│  Data Agent      │  NBA results (6,100+ games, 2021–26) + schedule + Polymarket
+│                  │  odds + ESPN injury report (accrues a historical archive)
 └────────┬─────────┘
-         │  data/raw/*.parquet
+         │  data/raw/*.parquet + injury_snapshots (DB)
          ▼
 ┌──────────────────┐
-│  Feature Agent   │  Computes 25 predictive features (Elo, rolling form, rest days)
-│                  │  Validates for data leakage and nulls
+│  Market Ops      │  DETERMINISTIC (no LLM): settles past predictions against
+│  (step 1.5)      │  final scores, computes CLV + paper-trade PnL, snapshots odds
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│  Feature Agent   │  Computes ~88 features (Elo, rolling form, rest, momentum,
+│                  │  H2H, SOS, roster strength); validates for leakage and nulls
 └────────┬─────────┘
          │  data/features/feature_matrix.parquet
          ▼
 ┌──────────────────┐
-│  Meta-Scientist  │  Designs and runs ML experiments (up to 5 per run)
-│  Agent           │  Reads persistent history, learns, tries new approaches
+│  Meta-Scientist  │  Designs and runs ML experiments: Optuna searches, CatBoost,
+│  Agent           │  TabPFN v2, ensembles. Reads structured findings — never
+│                  │  re-tests settled questions. Claims improvements only with
+│                  │  a paired significance test.
 └────────┬─────────┘
-         │  data/experiments/{id}/
+         │  data/experiments/{id}/ + experiment_log (DB)
          ▼
 ┌──────────────────┐
-│  Evaluation      │  Compares all experiments, checks calibration, promotes winner
-│  Agent           │  Evaluates vs. naive and market baselines
+│  Evaluation      │  Compares all experiments, checks calibration, nominates a
+│  Agent           │  winner vs. naive and market baselines
 └────────┬─────────┘
-         │  promoted model metadata
          ▼
 ┌──────────────────┐
-│  Report Agent    │  Generates HTML report: KPIs, convergence chart, predictions,
-│                  │  betting edges vs. Polymarket
+│  Critic Agent    │  RED TEAM with veto power: leakage audit (implausibly good
+│                  │  metrics), fold-stability check, paired significance test
+│                  │  vs. the incumbent champion. Verdicts: approved /
+│                  │  approved_with_caution / vetoed → promotions (DB)
 └────────┬─────────┘
-         │  data/reports/predicto_report_*.html
          ▼
-                      (Web dashboard at localhost:5000)
+┌──────────────────┐
+│  Report Agent    │  Predictions for upcoming games, betting edges vs. Polymarket
+│                  │  (injury-annotated), logs every prediction to the CLV ledger,
+│                  │  opens ¼-Kelly paper trades on ≥5% edges, HTML report
+└────────┬─────────┘
+         │  predictions + paper_trades (DB), data/reports/*.html
+         ▼
+   Neon Postgres ──▶ Next.js dashboard (Vercel) — see Live demo above
 ```
 
 **Agent models:**
-- Data, Feature, Eval, Report agents → `claude-sonnet-4` (fast, capable)
-- Meta-Scientist → `claude-opus-4` (deeper reasoning for experiment design)
+- Data, Feature, Eval, Report, Critic agents → `claude-sonnet-5` (fast, capable)
+- Meta-Scientist → `claude-opus-4-8` (deeper reasoning for experiment design)
 
 ---
 
@@ -121,9 +151,15 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env and add your key:
-ANTHROPIC_API_KEY=sk-ant-...
+# Edit .env and add:
+ANTHROPIC_API_KEY=sk-ant-...          # required — agents are Claude-backed
+DATABASE_URL=postgres://...           # optional — Neon Postgres; omits → local SQLite
 ```
+
+**Where runs happen:** the same `python main.py` runs locally or on GitHub Actions
+(nightly at 10:07 UTC, or Actions → "Nightly Pipeline" → Run workflow). Both write
+to the same database when `DATABASE_URL` is set, so the dashboard reflects either
+within 5 minutes. CI needs two repo secrets: `ANTHROPIC_API_KEY` and `DATABASE_URL`.
 
 ### Verify Setup
 
@@ -490,17 +526,31 @@ The promoted model (best log loss) is highlighted.
 
 ## Web Dashboard
 
-A Flask web interface lets you view reports and trigger runs without the command line.
+### Production (Next.js on Vercel)
+
+The production dashboard lives in `web-next/` and reads Neon directly
+(read-only, revalidates every 5 minutes). See **Live demo** at the top for the
+URL + access token.
+
+Pages: **Overview** (KPIs, champion model + critic verdict, convergence chart,
+scientist findings, recent runs), **Experiments** (all experiments ranked by
+walk-forward log loss), **Predictions** (the CLV ledger — model vs. market at
+prediction time, settled results), **Performance** (paper-trading ROI, average
+CLV, positive-CLV rate).
 
 ```bash
-python web/app.py
-# Open: http://localhost:5000
+cd web-next && npm install && npm run dev   # local dev (needs DATABASE_URL)
+vercel deploy --prod                        # deploy
 ```
 
-Features:
-- List and open past HTML reports
-- Trigger a new pipeline run (calls `main.py` in a subprocess)
-- View run status and logs
+Access is gated by `web-next/middleware.ts` (demo token, cookie for 30 days;
+override the token with a `DEMO_TOKEN` env var on Vercel).
+
+### Legacy (Flask, local only)
+
+```bash
+python web/app.py   # http://localhost:5000 — old report browser / run trigger
+```
 
 ---
 
@@ -510,31 +560,50 @@ Features:
 predicto/
 ├── agents/
 │   ├── base.py              # Base agent class: tool execution loop, Claude API calls
-│   ├── data_agent.py        # Stage 1: Fetch NBA games + Polymarket odds
-│   ├── feature_agent.py     # Stage 2: Compute 25 features, validate for leakage
-│   ├── meta_scientist.py    # Stage 3: Design and run ML experiments, self-improve
-│   ├── eval_agent.py        # Stage 4: Compare models, promote winner
-│   └── report_agent.py      # Stage 5: Generate HTML report with edges
+│   ├── data_agent.py        # Stage 1: NBA games + Polymarket odds + injury report
+│   ├── feature_agent.py     # Stage 2: Compute ~88 features, validate for leakage
+│   ├── meta_scientist.py    # Stage 3: Design/run experiments (Optuna, TabPFN, ...)
+│   ├── eval_agent.py        # Stage 4: Compare models, nominate winner
+│   ├── critic_agent.py      # Stage 4.5: Red-team audit with veto power
+│   └── report_agent.py      # Stage 5: Predictions, edges, CLV ledger, HTML report
+│
+├── sources/                 # Data-source plugins (DataSource contract)
+│   ├── base.py              # Plugin contract: fetch / schema / quality_report
+│   └── espn_injuries.py     # ESPN injury report + player impact scoring
 │
 ├── tools/
+│   ├── db.py                # Dual-backend DB: Neon Postgres or SQLite (schema v2)
+│   ├── storage.py           # Parquet I/O + DB writers (predictions, trades, findings)
+│   ├── market.py            # Odds snapshots, ¼-Kelly paper trades, CLV settlement
 │   ├── nba.py               # NBA Stats API client (wraps nba_api)
 │   ├── polymarket.py        # Polymarket Gamma + CLOB API clients (read-only)
-│   ├── features.py          # Elo computation, rolling stats, rest features
-│   ├── experiments.py       # ML experiment runner with time-series CV
+│   ├── features.py          # Elo, rolling stats, rest, momentum, H2H, roster strength
+│   ├── experiments.py       # Experiment runner: time-series CV, Optuna, calibration,
+│   │                        #   paired significance tests, TabPFN/CatBoost support
 │   ├── metrics.py           # Log loss, Brier score, calibration analysis
-│   ├── storage.py           # Parquet file I/O, SQLite read/write
 │   └── html_report.py       # Jinja2 HTML report template and builder
 │
-├── data/                    # All generated artifacts (gitignored except .gitkeep)
+├── scripts/
+│   ├── market_ops.py        # CLI: snapshot | settle | summary (cron-safe, no LLM)
+│   └── sync_to_neon.py      # One-way SQLite → Neon backfill
 │
-├── web/
-│   └── app.py               # Flask dashboard
+├── tests/
+│   └── test_leakage.py      # Future-mutation invariance: features use only the past
 │
-├── main.py                  # Entry point: orchestrates all 5 agents
-├── config.yaml              # All configuration (seasons, models, paths, limits)
-├── requirements.txt         # Python dependencies
-├── .env.example             # Environment variable template
-└── architecture.html        # Visual architecture diagram
+├── web-next/                # Production dashboard (Next.js, deployed on Vercel)
+├── web/app.py               # Legacy Flask dashboard (local)
+│
+├── .github/workflows/
+│   ├── pipeline.yml         # Nightly full pipeline (10:07 UTC) + manual dispatch
+│   ├── odds-snapshot.yml    # Odds capture every 30 min during game hours (CLV feed)
+│   └── ci.yml               # Leakage + unit tests on every push
+│
+├── data/seed/               # Last-known-good parquets (CI fallback for NBA API blocks)
+├── data/                    # Generated artifacts (mostly gitignored)
+├── docs/MASTER_PLAN.md      # Full platform roadmap
+├── main.py                  # Entry point: orchestrates all 6 agents + market ops
+├── config.yaml              # Configuration (seasons, models, limits)
+└── requirements.txt         # Python dependencies
 ```
 
 ---
@@ -543,19 +612,23 @@ predicto/
 
 | Layer | Library | Purpose |
 |-------|---------|---------|
-| AI/LLM | `anthropic` | Claude Sonnet/Opus as agent backbones |
-| ML | `scikit-learn` | LR, GBM, CV, metrics |
-| ML | `lightgbm` | Fast tree boosting |
-| ML | `xgboost` | Gradient boosting |
-| ML | `torch` | Neural network backend |
+| AI/LLM | `anthropic` | Claude Sonnet 5 / Opus 4.8 as agent backbones |
+| ML | `scikit-learn` | LR/Ridge, GBM, CV, metrics, isotonic calibration |
+| ML | `lightgbm`, `xgboost`, `catboost` | Tree boosting family |
+| ML | `tabpfn` (v2) | Tabular foundation model (pretrained transformer) |
+| ML | `optuna` | Hyperparameter search (TPE + pruning) |
+| ML | `scipy` | Paired significance tests for promotion gating |
+| ML | `torch` | Neural network / TabPFN backend |
 | Data | `pandas`, `numpy` | DataFrames and numerics |
 | Data | `nba_api` | NBA Stats API wrapper |
-| Data | `requests` | HTTP calls to Polymarket |
+| Data | `requests` | Polymarket + ESPN injuries HTTP |
+| Storage | `psycopg` → **Neon Postgres** | Production database (`DATABASE_URL`) |
+| Storage | `sqlite3` | Local fallback database |
 | Storage | `pyarrow` | Parquet file I/O |
-| Storage | `sqlite3` | Experiment metadata database |
-| Config | `pyyaml` | YAML config parsing |
-| Config | `python-dotenv` | `.env` file loading |
-| Web | `flask` | Dashboard UI |
+| Web | Next.js 15 + `@neondatabase/serverless` | Production dashboard on Vercel |
+| Web | `flask` | Legacy local dashboard |
+| CI/CD | GitHub Actions | Nightly pipeline, odds snapshots, leakage tests |
+| Config | `pyyaml`, `python-dotenv` | Config + `.env` loading |
 
 ---
 

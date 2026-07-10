@@ -81,7 +81,9 @@ MODEL_REGISTRY = {
             "TabPFN v2 — tabular foundation model (pretrained transformer). "
             "No hyperparameters to tune; competitive with tuned GBDTs on "
             "datasets of this size. Automatically capped to the most recent "
-            "3000 games (CPU runtime); expect a few minutes per experiment."
+            "3000 games. IMPORTANT: use a focused feature subset (<= 20 "
+            "features) — TabPFN cost scales with feature count and an "
+            "all-features run will hit the experiment time budget."
         ),
     },
 }
@@ -191,7 +193,22 @@ def run_experiment(
     all_test_preds = []
     all_test_true = []
 
+    # Wall-clock budget per experiment. Slow methods (TabPFN on wide feature
+    # sets) can otherwise eat an entire pipeline run on a single experiment.
+    import os as _os
+    import time as _time
+    timeout_s = int(_os.environ.get("EXPERIMENT_TIMEOUT_SECONDS", "900"))
+    started_at = _time.monotonic()
+    timed_out = False
+
     for fold, (train_idx, test_idx) in enumerate(tscv.split(X)):
+        if _time.monotonic() - started_at > timeout_s:
+            logger.warning(
+                "Experiment %s exceeded %ds budget after %d folds — stopping early",
+                experiment_name, timeout_s, len(fold_results),
+            )
+            timed_out = True
+            break
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
@@ -226,13 +243,14 @@ def run_experiment(
         all_test_preds.extend(y_prob.tolist())
         all_test_true.extend(y_test.tolist())
 
-    if not fold_results:
+    if len(fold_results) < 2:
         return {
             "experiment_id": experiment_id,
             "name": experiment_name,
             "method": method,
             "status": "failed",
-            "error": "All folds failed",
+            "error": ("Timed out before completing 2 folds — use fewer features "
+                      "or a faster method" if timed_out else "All folds failed"),
         }
 
     # Aggregate metrics across folds
@@ -308,6 +326,7 @@ def run_experiment(
         "train_samples": int(len(X)),
         "test_samples": int(len(all_test_true)),
         "n_folds": len(fold_results),
+        "timed_out_early": timed_out,
         "fold_metrics": fold_results,
         "avg_metrics": avg_metrics,
         "overall_metrics": overall,

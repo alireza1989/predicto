@@ -4937,3 +4937,146 @@ Your goal: find the metho...
 ============================================================
 2026-07-10 09:31:32,446 [predicto] INFO: Pipeline Complete: Pipeline completed in 5s. Agents: 5, Total tool calls: 0
 2026-07-10 09:31:32,446 [predicto] INFO: ============================================================
+2026-07-10 09:32:59,362 [predicto] INFO: ============================================================
+2026-07-10 09:32:59,362 [predicto] INFO: Predicto Pipeline Run: 537e2eb0
+2026-07-10 09:32:59,362 [predicto] INFO: Started: 2026-07-10T09:32:59.362087
+2026-07-10 09:32:59,362 [predicto] INFO: ============================================================
+2026-07-10 09:33:00,140 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:33:00,211 [predicto] INFO: Skipping data collection (--skip-data)
+2026-07-10 09:34:15,914 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:34:15,916 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 09:34:16,434 [tools.market] INFO: Settled 0 outcomes, 0 paper trades
+2026-07-10 09:34:16,438 [predicto] INFO: Market ops: settled {'outcomes': 0, 'trades_settled': 0}
+2026-07-10 09:34:16,439 [tools.polymarket] INFO: Fetching NBA game markets from Polymarket
+2026-07-10 09:34:17,219 [tools.polymarket] INFO:   Found 0 NBA game markets with moneyline prices
+2026-07-10 09:34:17,219 [tools.market] INFO: No active Polymarket NBA game markets
+2026-07-10 09:34:17,220 [predicto] INFO: Market ops: odds snapshot {'snapshots': 0, 'markets': 0}
+2026-07-10 09:34:17,221 [predicto] INFO: 
+============================================================
+2026-07-10 09:34:17,221 [predicto] INFO: STEP 2: Feature Engineering Agent
+2026-07-10 09:34:17,221 [predicto] INFO: ============================================================
+2026-07-10 09:34:17,248 [agents.base] INFO: [feature_agent] Starting task: Compute and validate all features from the raw NBA matchup data. Check for data quality issues and p...
+2026-07-10 09:34:19,159 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:34:19,178 [agents.base] INFO: [feature_agent] Calling tool: load_raw_matchups
+2026-07-10 09:34:19,179 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 09:34:22,370 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:34:22,374 [agents.base] INFO: [feature_agent] Calling tool: compute_all_features
+2026-07-10 09:34:22,375 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 09:34:23,929 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/team_stats_2025-26_20260420_083216.parquet
+2026-07-10 09:34:24,111 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/player_game_logs_20260420_083210.parquet
+2026-07-10 09:35:14,555 [agents.feature_agent] INFO: Player strength features computed: ['home_roster_gmscore', 'home_star_gmscore', 'home_roster_depth', 'home_star_dependency', 'home_roster_plus_minus', 'away_roster_gmscore', 'away_star_gmscore', 'away_roster_depth', 'away_star_dependency', 'away_roster_plus_minus', 'player_gmscore_diff', 'player_star_diff', 'player_depth_diff', 'player_plus_minus_diff']
+2026-07-10 09:35:14,569 [tools.features] INFO: Added momentum features: ['home_streak', 'away_streak', 'streak_diff', 'home_home_wpct', 'away_away_wpct', 'home_away_split']
+2026-07-10 09:35:14,571 [tools.features] INFO: Added H2H features: ['h2h_home_wpct', 'h2h_games']
+2026-07-10 09:35:14,573 [tools.features] INFO: Added SOS features: ['home_sos', 'away_sos', 'sos_diff']
+2026-07-10 09:35:14,576 [tools.features] INFO: Added advanced stats features: 33 columns
+2026-07-10 09:35:14,579 [tools.features] INFO: Added player strength features: 14 columns
+2026-07-10 09:35:14,607 [tools.storage] INFO: Saved 6140 rows to /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:14,610 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:14,630 [agents.base] INFO: [feature_agent] Calling tool: get_feature_info
+2026-07-10 09:35:14,631 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:21,549 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:35:21,552 [agents.base] INFO: [feature_agent] Calling tool: validate_features
+2026-07-10 09:35:21,553 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:21,566 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:38,448 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:35:38,462 [agents.base] INFO: [feature_agent] Completed in 4 iterations, 4 tool calls
+2026-07-10 09:35:38,463 [predicto] INFO: Feature Agent completed. Tool calls: 4
+2026-07-10 09:35:38,463 [predicto] INFO: 
+============================================================
+2026-07-10 09:35:38,463 [predicto] INFO: STEP 3: Meta-Scientist Agent
+2026-07-10 09:35:38,463 [predicto] INFO: ============================================================
+2026-07-10 09:35:38,472 [agents.base] INFO: [meta_scientist] Starting task: Design and run up to 5 experiments to find the best NBA prediction model.
+
+Your goal: find the metho...
+2026-07-10 09:35:41,467 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:35:41,468 [agents.base] INFO: [meta_scientist] Calling tool: read_scientist_history
+2026-07-10 09:35:41,471 [agents.base] INFO: [meta_scientist] Calling tool: get_findings
+2026-07-10 09:35:42,119 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:35:42,170 [agents.base] INFO: [meta_scientist] Calling tool: get_experiment_history
+2026-07-10 09:35:42,829 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:35:42,935 [agents.base] INFO: [meta_scientist] Calling tool: get_feature_columns
+2026-07-10 09:35:42,936 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:42,956 [agents.base] INFO: [meta_scientist] Calling tool: get_available_methods
+2026-07-10 09:35:54,573 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 09:35:54,574 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-07-10 09:35:54,574 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:54,585 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:54,590 [tools.experiments] INFO: Running experiment: Champion Baseline - Ridge L2 C=0.01 (14 feat) (method=logistic_regression)
+2026-07-10 09:35:54,676 [tools.experiments] INFO:   Experiment Champion Baseline - Ridge L2 C=0.01 (14 feat): log_loss=0.6163, brier=0.2139, accuracy=0.6551
+2026-07-10 09:35:55,316 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:35:55,391 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-07-10 09:35:55,393 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:55,402 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:55,411 [tools.experiments] INFO: Running experiment: CatBoost - all features (untested method) (method=catboost)
+2026-07-10 09:35:58,220 [tools.experiments] INFO:   Experiment CatBoost - all features (untested method): log_loss=0.6314, brier=0.2202, accuracy=0.6491
+2026-07-10 09:35:58,911 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 09:35:58,987 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-07-10 09:35:58,988 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:58,999 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_093514.parquet
+2026-07-10 09:35:59,009 [tools.experiments] INFO: Running experiment: TabPFN - 14 core features (untested method) (method=tabpfn)
+2026-07-10 16:10:47,338 [predicto] INFO: ============================================================
+2026-07-10 16:10:47,338 [predicto] INFO: Predicto Pipeline Run: 36f1ab16
+2026-07-10 16:10:47,338 [predicto] INFO: Started: 2026-07-10T16:10:47.338509
+2026-07-10 16:10:47,338 [predicto] INFO: ============================================================
+2026-07-10 16:10:48,210 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 16:10:48,290 [predicto] INFO: Skipping data collection (--skip-data)
+2026-07-10 16:10:49,002 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 16:10:49,004 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 16:10:49,424 [tools.market] INFO: Settled 0 outcomes, 0 paper trades
+2026-07-10 16:10:49,427 [predicto] INFO: Market ops: settled {'outcomes': 0, 'trades_settled': 0}
+2026-07-10 16:10:49,428 [tools.polymarket] INFO: Fetching NBA game markets from Polymarket
+2026-07-10 16:10:50,314 [tools.polymarket] INFO:   Found 0 NBA game markets with moneyline prices
+2026-07-10 16:10:50,315 [tools.market] INFO: No active Polymarket NBA game markets
+2026-07-10 16:10:50,316 [predicto] INFO: Market ops: odds snapshot {'snapshots': 0, 'markets': 0}
+2026-07-10 16:10:50,316 [predicto] INFO: 
+============================================================
+2026-07-10 16:10:50,316 [predicto] INFO: STEP 2: Feature Engineering Agent
+2026-07-10 16:10:50,316 [predicto] INFO: ============================================================
+2026-07-10 16:10:50,340 [agents.base] INFO: [feature_agent] Starting task: Compute and validate all features from the raw NBA matchup data. Check for data quality issues and p...
+2026-07-10 16:10:51,934 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:10:51,958 [agents.base] INFO: [feature_agent] Calling tool: load_raw_matchups
+2026-07-10 16:10:51,958 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 16:10:53,836 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:10:53,839 [agents.base] INFO: [feature_agent] Calling tool: compute_all_features
+2026-07-10 16:10:53,839 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-07-10 16:10:55,463 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/team_stats_2025-26_20260420_083216.parquet
+2026-07-10 16:10:55,657 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/player_game_logs_20260420_083210.parquet
+2026-07-10 16:11:45,949 [agents.feature_agent] INFO: Player strength features computed: ['home_roster_gmscore', 'home_star_gmscore', 'home_roster_depth', 'home_star_dependency', 'home_roster_plus_minus', 'away_roster_gmscore', 'away_star_gmscore', 'away_roster_depth', 'away_star_dependency', 'away_roster_plus_minus', 'player_gmscore_diff', 'player_star_diff', 'player_depth_diff', 'player_plus_minus_diff']
+2026-07-10 16:11:45,960 [tools.features] INFO: Added momentum features: ['home_streak', 'away_streak', 'streak_diff', 'home_home_wpct', 'away_away_wpct', 'home_away_split']
+2026-07-10 16:11:45,962 [tools.features] INFO: Added H2H features: ['h2h_home_wpct', 'h2h_games']
+2026-07-10 16:11:45,964 [tools.features] INFO: Added SOS features: ['home_sos', 'away_sos', 'sos_diff']
+2026-07-10 16:11:45,967 [tools.features] INFO: Added advanced stats features: 33 columns
+2026-07-10 16:11:45,969 [tools.features] INFO: Added player strength features: 14 columns
+2026-07-10 16:11:45,996 [tools.storage] INFO: Saved 6140 rows to /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:11:45,997 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:11:46,016 [agents.base] INFO: [feature_agent] Calling tool: get_feature_info
+2026-07-10 16:11:46,017 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:11:48,579 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:11:48,581 [agents.base] INFO: [feature_agent] Calling tool: validate_features
+2026-07-10 16:11:48,582 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:11:48,594 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:12:00,659 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:12:00,662 [agents.base] INFO: [feature_agent] Completed in 4 iterations, 4 tool calls
+2026-07-10 16:12:00,662 [predicto] INFO: Feature Agent completed. Tool calls: 4
+2026-07-10 16:12:00,662 [predicto] INFO: 
+============================================================
+2026-07-10 16:12:00,662 [predicto] INFO: STEP 3: Meta-Scientist Agent
+2026-07-10 16:12:00,662 [predicto] INFO: ============================================================
+2026-07-10 16:12:00,669 [agents.base] INFO: [meta_scientist] Starting task: Design and run up to 5 experiments to find the best NBA prediction model.
+
+Your goal: find the metho...
+2026-07-10 16:12:03,322 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:12:03,323 [agents.base] INFO: [meta_scientist] Calling tool: read_scientist_history
+2026-07-10 16:12:03,324 [agents.base] INFO: [meta_scientist] Calling tool: get_findings
+2026-07-10 16:12:03,999 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 16:12:04,050 [agents.base] INFO: [meta_scientist] Calling tool: get_experiment_history
+2026-07-10 16:12:04,828 [tools.db] INFO: Schema applied on postgres (13 tables)
+2026-07-10 16:12:04,909 [agents.base] INFO: [meta_scientist] Calling tool: get_feature_columns
+2026-07-10 16:12:04,910 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:12:04,926 [agents.base] INFO: [meta_scientist] Calling tool: get_available_methods
+2026-07-10 16:12:15,713 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-07-10 16:12:15,717 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-07-10 16:12:15,718 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:12:15,732 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260710_161145.parquet
+2026-07-10 16:12:15,739 [tools.experiments] INFO: Running experiment: TabPFN v2 - all features (untested foundation model) (method=tabpfn)
+2026-07-10 16:12:15,743 [tools.experiments] INFO: TabPFN: capping to most recent 3000 of 6140 games (CPU runtime)

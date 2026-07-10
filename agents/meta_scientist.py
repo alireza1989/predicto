@@ -498,9 +498,11 @@ Your job is to **design experiments, run them, compare results, and converge on 
 - Classic: logistic_regression, gradient_boosting, lightgbm, xgboost, neural_network
 - **catboost** — ordered boosting, often best-in-class on small tabular data
 - **tabpfn** — TabPFN v2 tabular foundation model (pretrained transformer).
-  No hyperparameters. Slow per fit (CPU) — use n_splits default, don't tune it.
-  Early evidence on this dataset is very promising — verify against the champion
-  on identical folds with compare_significance.
+  No hyperparameters. ALWAYS pass a focused feature_subset (<= 20 features) —
+  cost scales with feature count, and each experiment has a hard time budget
+  (a run that exceeds it is stopped early or failed). Early evidence on this
+  dataset is very promising — verify against the champion on identical folds
+  with compare_significance.
 
 ## Modern workflow (prefer this over manual parameter walking):
 1. **get_findings** + **read_scientist_history** — what is already settled?

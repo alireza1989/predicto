@@ -22,7 +22,7 @@ export default async function Overview() {
     </>
   );
 
-  const [experiments, runs, champion, perf] = await Promise.all([
+  const [experiments, runs, champion, perf, findings] = await Promise.all([
     q<Experiment>(
       `SELECT experiment_id, name, method, metrics_json, conclusion, status, created_at
        FROM experiment_log WHERE status = 'completed' ORDER BY created_at ASC`
@@ -40,6 +40,10 @@ export default async function Overview() {
          (SELECT COUNT(*) FROM paper_trades) AS n_trades,
          (SELECT COALESCE(SUM(pnl), 0) FROM paper_trades WHERE status = 'settled') AS pnl,
          (SELECT AVG(clv) FROM paper_trades WHERE clv IS NOT NULL) AS avg_clv`
+    ),
+    q<{ claim: string; confidence: string; source_agent: string; created_at: string }>(
+      `SELECT claim, confidence, source_agent, created_at FROM findings
+       WHERE status = 'active' ORDER BY created_at DESC LIMIT 6`
     ),
   ]);
 
@@ -65,7 +69,7 @@ export default async function Overview() {
     <>
       <h1>Overview</h1>
       <p className="sub">
-        Five-agent pipeline: data → features → meta-scientist → eval → critic →
+        Six-agent pipeline: data → features → meta-scientist → eval → critic →
         report. Metrics update after every run.
       </p>
 
@@ -134,6 +138,36 @@ export default async function Overview() {
           baselineLabel="random (0.693)"
         />
       </div>
+
+      {findings.length > 0 && (
+        <>
+          <h2>Scientist findings — settled questions</h2>
+          <div className="card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Claim</th>
+                  <th>Confidence</th>
+                  <th>Agent</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {findings.map((f, i) => (
+                  <tr key={i}>
+                    <td style={{ whiteSpace: "normal" }}>{f.claim}</td>
+                    <td>
+                      <span className="badge">{f.confidence}</span>
+                    </td>
+                    <td>{f.source_agent}</td>
+                    <td>{String(f.created_at).slice(0, 10)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <h2>Recent runs</h2>
       <div className="card">

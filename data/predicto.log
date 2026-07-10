@@ -4545,3 +4545,334 @@ Your goal: find the metho...
 ============================================================
 2026-04-14 06:37:26,270 [predicto] INFO: Pipeline Complete: Pipeline completed in 212s. Agents: 4, Total tool calls: 24
 2026-04-14 06:37:26,271 [predicto] INFO: ============================================================
+2026-04-20 08:31:51,400 [predicto] INFO: ============================================================
+2026-04-20 08:31:51,401 [predicto] INFO: Predicto Pipeline Run: d85da07d
+2026-04-20 08:31:51,401 [predicto] INFO: Started: 2026-04-20T08:31:51.400810
+2026-04-20 08:31:51,401 [predicto] INFO: ============================================================
+2026-04-20 08:31:51,403 [predicto] INFO: 
+============================================================
+2026-04-20 08:31:51,403 [predicto] INFO: STEP 1: Data Collection Agent
+2026-04-20 08:31:51,403 [predicto] INFO: ============================================================
+2026-04-20 08:31:51,423 [agents.base] INFO: [data_agent] Starting task: Collect NBA data for the prediction system.
+
+1. Fetch historical NBA game results for seasons: ['202...
+2026-04-20 08:31:53,826 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:31:53,851 [agents.base] INFO: [data_agent] Calling tool: fetch_nba_games
+2026-04-20 08:31:53,851 [tools.nba] INFO: Fetching game logs for 2021-22 (Regular Season)
+2026-04-20 08:31:55,032 [tools.nba] INFO:   Got 2460 team-game rows for 2021-22
+2026-04-20 08:31:55,032 [tools.nba] INFO: Fetching game logs for 2022-23 (Regular Season)
+2026-04-20 08:31:56,148 [tools.nba] INFO:   Got 2460 team-game rows for 2022-23
+2026-04-20 08:31:56,148 [tools.nba] INFO: Fetching game logs for 2023-24 (Regular Season)
+2026-04-20 08:31:57,283 [tools.nba] INFO:   Got 2460 team-game rows for 2023-24
+2026-04-20 08:31:57,284 [tools.nba] INFO: Fetching game logs for 2024-25 (Regular Season)
+2026-04-20 08:31:58,447 [tools.nba] INFO:   Got 2460 team-game rows for 2024-25
+2026-04-20 08:31:58,448 [tools.nba] INFO: Fetching game logs for 2025-26 (Regular Season)
+2026-04-20 08:31:59,678 [tools.nba] INFO:   Got 2460 team-game rows for 2025-26
+2026-04-20 08:31:59,826 [tools.storage] INFO: Saved 6140 rows to /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-04-20 08:32:03,337 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:03,339 [agents.base] INFO: [data_agent] Calling tool: fetch_player_logs
+2026-04-20 08:32:03,340 [tools.nba] INFO: Fetching player game logs for 2021-22...
+2026-04-20 08:32:04,657 [tools.nba] INFO:   Got 26039 player-game rows for 2021-22
+2026-04-20 08:32:04,658 [tools.nba] INFO: Fetching player game logs for 2022-23...
+2026-04-20 08:32:05,985 [tools.nba] INFO:   Got 25895 player-game rows for 2022-23
+2026-04-20 08:32:05,985 [tools.nba] INFO: Fetching player game logs for 2023-24...
+2026-04-20 08:32:07,249 [tools.nba] INFO:   Got 26401 player-game rows for 2023-24
+2026-04-20 08:32:07,250 [tools.nba] INFO: Fetching player game logs for 2024-25...
+2026-04-20 08:32:08,569 [tools.nba] INFO:   Got 26306 player-game rows for 2024-25
+2026-04-20 08:32:08,569 [tools.nba] INFO: Fetching player game logs for 2025-26...
+2026-04-20 08:32:10,461 [tools.nba] INFO:   Got 26651 player-game rows for 2025-26
+2026-04-20 08:32:10,687 [tools.storage] INFO: Saved 131292 rows to /Users/alireza/Documents/projects/predicto/data/raw/player_game_logs_20260420_083210.parquet
+2026-04-20 08:32:12,906 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:12,909 [agents.base] INFO: [data_agent] Calling tool: fetch_upcoming_nba_games
+2026-04-20 08:32:12,910 [tools.nba] INFO: Fetching NBA schedule (next 14 days)
+2026-04-20 08:32:13,255 [tools.nba] INFO:   Found 48 upcoming games
+2026-04-20 08:32:13,260 [tools.storage] INFO: Saved 48 rows to /Users/alireza/Documents/projects/predicto/data/raw/upcoming_games_20260420_083213.parquet
+2026-04-20 08:32:15,364 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:15,368 [agents.base] INFO: [data_agent] Calling tool: fetch_team_stats
+2026-04-20 08:32:15,368 [tools.nba] INFO: Fetching advanced team stats for 2025-26
+2026-04-20 08:32:16,542 [tools.nba] INFO:   Got stats for 30 teams
+2026-04-20 08:32:16,553 [tools.storage] INFO: Saved 30 rows to /Users/alireza/Documents/projects/predicto/data/raw/team_stats_2025-26_20260420_083216.parquet
+2026-04-20 08:32:18,492 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:18,496 [agents.base] INFO: [data_agent] Calling tool: fetch_polymarket_game_markets
+2026-04-20 08:32:18,496 [tools.polymarket] INFO: Fetching NBA game markets from Polymarket
+2026-04-20 08:32:19,456 [tools.polymarket] INFO:   Found 34 NBA game markets with moneyline prices
+2026-04-20 08:32:19,460 [tools.storage] INFO: Saved 34 rows to /Users/alireza/Documents/projects/predicto/data/raw/polymarket_game_markets_20260420_083219.parquet
+2026-04-20 08:32:22,429 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:22,432 [agents.base] INFO: [data_agent] Calling tool: search_polymarket_nba
+2026-04-20 08:32:22,432 [tools.polymarket] INFO: Searching for NBA markets on Polymarket
+2026-04-20 08:32:35,202 [tools.polymarket] INFO:   Found 1729 NBA-related markets
+2026-04-20 08:32:35,222 [tools.storage] INFO: Saved 1729 rows to /Users/alireza/Documents/projects/predicto/data/raw/polymarket_nba_20260420_083235.parquet
+2026-04-20 08:32:43,626 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:43,631 [agents.base] INFO: [data_agent] Completed in 7 iterations, 6 tool calls
+2026-04-20 08:32:43,631 [predicto] INFO: Data Agent completed. Tool calls: 6
+2026-04-20 08:32:43,631 [predicto] INFO: 
+============================================================
+2026-04-20 08:32:43,631 [predicto] INFO: STEP 2: Feature Engineering Agent
+2026-04-20 08:32:43,631 [predicto] INFO: ============================================================
+2026-04-20 08:32:43,641 [agents.base] INFO: [feature_agent] Starting task: Compute and validate all features from the raw NBA matchup data. Check for data quality issues and p...
+2026-04-20 08:32:45,469 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:45,474 [agents.base] INFO: [feature_agent] Calling tool: load_raw_matchups
+2026-04-20 08:32:45,475 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-04-20 08:32:49,312 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:32:49,313 [agents.base] INFO: [feature_agent] Calling tool: compute_all_features
+2026-04-20 08:32:49,314 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-04-20 08:32:50,881 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/team_stats_2025-26_20260420_083216.parquet
+2026-04-20 08:32:51,094 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/player_game_logs_20260420_083210.parquet
+2026-04-20 08:33:40,077 [agents.feature_agent] INFO: Player strength features computed: ['home_roster_gmscore', 'home_star_gmscore', 'home_roster_depth', 'home_star_dependency', 'home_roster_plus_minus', 'away_roster_gmscore', 'away_star_gmscore', 'away_roster_depth', 'away_star_dependency', 'away_roster_plus_minus', 'player_gmscore_diff', 'player_star_diff', 'player_depth_diff', 'player_plus_minus_diff']
+2026-04-20 08:33:40,087 [tools.features] INFO: Added momentum features: ['home_streak', 'away_streak', 'streak_diff', 'home_home_wpct', 'away_away_wpct', 'home_away_split']
+2026-04-20 08:33:40,088 [tools.features] INFO: Added H2H features: ['h2h_home_wpct', 'h2h_games']
+2026-04-20 08:33:40,091 [tools.features] INFO: Added SOS features: ['home_sos', 'away_sos', 'sos_diff']
+2026-04-20 08:33:40,093 [tools.features] INFO: Added advanced stats features: 33 columns
+2026-04-20 08:33:40,096 [tools.features] INFO: Added player strength features: 14 columns
+2026-04-20 08:33:40,116 [tools.storage] INFO: Saved 6140 rows to /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:33:40,123 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:33:42,303 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:33:42,307 [agents.base] INFO: [feature_agent] Calling tool: validate_features
+2026-04-20 08:33:42,308 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:33:42,321 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:33:44,148 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:33:44,150 [agents.base] INFO: [feature_agent] Calling tool: get_feature_info
+2026-04-20 08:33:44,152 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:01,844 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:01,847 [agents.base] INFO: [feature_agent] Completed in 5 iterations, 4 tool calls
+2026-04-20 08:34:01,847 [predicto] INFO: Feature Agent completed. Tool calls: 4
+2026-04-20 08:34:01,847 [predicto] INFO: 
+============================================================
+2026-04-20 08:34:01,847 [predicto] INFO: STEP 3: Meta-Scientist Agent
+2026-04-20 08:34:01,847 [predicto] INFO: ============================================================
+2026-04-20 08:34:01,855 [agents.base] INFO: [meta_scientist] Starting task: Design and run up to 5 experiments to find the best NBA prediction model.
+
+Your goal: find the metho...
+2026-04-20 08:34:04,370 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:04,374 [agents.base] INFO: [meta_scientist] Calling tool: read_scientist_history
+2026-04-20 08:34:07,084 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:07,086 [agents.base] INFO: [meta_scientist] Calling tool: get_experiment_history
+2026-04-20 08:34:10,048 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:10,052 [agents.base] INFO: [meta_scientist] Calling tool: get_feature_columns
+2026-04-20 08:34:10,053 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:26,131 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:26,134 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:34:26,135 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:26,148 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:26,158 [tools.experiments] INFO: Running experiment: ElasticNet - Mixed L1/L2 Regularization (method=logistic_regression)
+2026-04-20 08:34:26,246 [tools.experiments] INFO:   Experiment ElasticNet - Mixed L1/L2 Regularization: log_loss=0.6207, brier=0.2158, accuracy=0.6536
+2026-04-20 08:34:31,549 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:31,551 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:34:31,553 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:31,566 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:31,572 [tools.experiments] INFO: Running experiment: Minimal Strategic Features - Elo + Form + Schedule (method=logistic_regression)
+2026-04-20 08:34:31,620 [tools.experiments] INFO:   Experiment Minimal Strategic Features - Elo + Form + Schedule: log_loss=0.6176, brier=0.2145, accuracy=0.6571
+2026-04-20 08:34:36,815 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:36,821 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:34:36,822 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:36,833 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:36,841 [tools.experiments] INFO: Running experiment: Ridge Regression - Pure L2 Comparison (method=logistic_regression)
+2026-04-20 08:34:36,884 [tools.experiments] INFO:   Experiment Ridge Regression - Pure L2 Comparison: log_loss=0.6161, brier=0.2138, accuracy=0.6577
+2026-04-20 08:34:41,593 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:41,596 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:34:41,597 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:41,609 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:41,617 [tools.experiments] INFO: Running experiment: Gradient Boosting - Minimal Features with Deeper Trees (method=gradient_boosting)
+2026-04-20 08:34:45,236 [tools.experiments] INFO:   Experiment Gradient Boosting - Minimal Features with Deeper Trees: log_loss=0.6442, brier=0.2251, accuracy=0.6399
+2026-04-20 08:34:50,010 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:34:50,012 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:34:50,013 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:50,024 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:34:50,029 [tools.experiments] INFO: Running experiment: XGBoost - Ultra Conservative with 4 Features (method=xgboost)
+2026-04-20 08:34:50,354 [tools.experiments] INFO:   Experiment XGBoost - Ultra Conservative with 4 Features: log_loss=0.6372, brier=0.2228, accuracy=0.6502
+2026-04-20 08:35:17,886 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:17,893 [agents.base] INFO: [meta_scientist] Calling tool: update_scientist_history
+2026-04-20 08:35:17,895 [agents.meta_scientist] INFO: Updated scientist history at /Users/alireza/Documents/projects/predicto/data/scientist_history.md
+2026-04-20 08:35:39,349 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:39,352 [agents.base] INFO: [meta_scientist] Completed in 10 iterations, 9 tool calls
+2026-04-20 08:35:39,353 [predicto] INFO: Meta-Scientist completed. Tool calls: 9
+2026-04-20 08:35:39,353 [predicto] INFO: 
+============================================================
+2026-04-20 08:35:39,353 [predicto] INFO: STEP 4: Evaluation Agent
+2026-04-20 08:35:39,353 [predicto] INFO: ============================================================
+2026-04-20 08:35:39,363 [agents.base] INFO: [eval_agent] Starting task: Evaluate all completed experiments. Compare them side by side. Check calibration of the best model. ...
+2026-04-20 08:35:41,803 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:41,805 [agents.base] INFO: [eval_agent] Calling tool: get_experiment_results
+2026-04-20 08:35:47,104 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:47,107 [agents.base] INFO: [eval_agent] Calling tool: compare_experiments
+2026-04-20 08:35:49,382 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:49,385 [agents.base] INFO: [eval_agent] Calling tool: evaluate_against_baselines
+2026-04-20 08:35:51,533 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:51,536 [agents.base] INFO: [eval_agent] Calling tool: compute_calibration
+2026-04-20 08:35:54,091 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:35:54,094 [agents.base] INFO: [eval_agent] Calling tool: make_promotion_decision
+2026-04-20 08:36:20,210 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:20,223 [agents.base] INFO: [eval_agent] Completed in 6 iterations, 5 tool calls
+2026-04-20 08:36:20,223 [predicto] INFO: Eval Agent completed. Tool calls: 5
+2026-04-20 08:36:20,223 [predicto] INFO: 
+============================================================
+2026-04-20 08:36:20,223 [predicto] INFO: STEP 5: Report Agent
+2026-04-20 08:36:20,223 [predicto] INFO: ============================================================
+2026-04-20 08:36:20,232 [agents.base] INFO: [report_agent] Starting task: Generate the final Predicto analysis report. IMPORTANT: Use compute_betting_edges to compare model p...
+2026-04-20 08:36:22,586 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:22,588 [agents.base] INFO: [report_agent] Calling tool: get_promoted_model
+2026-04-20 08:36:25,015 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:25,016 [agents.base] INFO: [report_agent] Calling tool: get_all_experiment_summary
+2026-04-20 08:36:26,555 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:26,557 [agents.base] INFO: [report_agent] Calling tool: get_upcoming_predictions
+2026-04-20 08:36:26,563 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:36:26,583 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/upcoming_games_20260420_083213.parquet
+2026-04-20 08:36:27,986 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:27,988 [agents.base] INFO: [report_agent] Calling tool: get_market_data
+2026-04-20 08:36:27,990 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_nba_20260420_083235.parquet
+2026-04-20 08:36:29,729 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:29,732 [agents.base] INFO: [report_agent] Calling tool: compute_betting_edges
+2026-04-20 08:36:29,734 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_game_markets_20260420_083219.parquet
+2026-04-20 08:36:29,741 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:36:29,797 [tools.polymarket] INFO:   Matched 2 games between predictions and markets
+2026-04-20 08:36:57,474 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:36:57,483 [agents.base] INFO: [report_agent] Calling tool: save_html_report
+2026-04-20 08:36:57,488 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_game_markets_20260420_083219.parquet
+2026-04-20 08:36:57,495 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_083340.parquet
+2026-04-20 08:36:57,545 [tools.polymarket] INFO:   Matched 2 games between predictions and markets
+2026-04-20 08:36:57,547 [agents.report_agent] INFO: HTML report saved to /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter8_20260420_083657.html
+2026-04-20 08:37:07,026 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:37:07,037 [agents.base] INFO: [report_agent] Completed in 7 iterations, 6 tool calls
+2026-04-20 08:37:07,038 [predicto] INFO: Report Agent completed. Tool calls: 6
+2026-04-20 08:37:07,041 [predicto] INFO: 
+============================================================
+2026-04-20 08:37:07,041 [predicto] INFO: Pipeline Complete: Pipeline completed in 316s. Agents: 5, Total tool calls: 30
+2026-04-20 08:37:07,041 [predicto] INFO: ============================================================
+2026-04-20 08:40:51,278 [predicto] INFO: ============================================================
+2026-04-20 08:40:51,278 [predicto] INFO: Predicto Pipeline Run: 99d0140c
+2026-04-20 08:40:51,278 [predicto] INFO: Started: 2026-04-20T08:40:51.277993
+2026-04-20 08:40:51,278 [predicto] INFO: ============================================================
+2026-04-20 08:40:51,280 [predicto] INFO: Skipping data collection (--skip-data)
+2026-04-20 08:40:51,280 [predicto] INFO: 
+============================================================
+2026-04-20 08:40:51,280 [predicto] INFO: STEP 2: Feature Engineering Agent
+2026-04-20 08:40:51,280 [predicto] INFO: ============================================================
+2026-04-20 08:40:51,298 [agents.base] INFO: [feature_agent] Starting task: Compute and validate all features from the raw NBA matchup data. Check for data quality issues and p...
+2026-04-20 08:40:53,614 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:40:53,645 [agents.base] INFO: [feature_agent] Calling tool: load_raw_matchups
+2026-04-20 08:40:53,646 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-04-20 08:40:56,507 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:40:56,508 [agents.base] INFO: [feature_agent] Calling tool: compute_all_features
+2026-04-20 08:40:56,508 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/nba_matchups_20260420_083159.parquet
+2026-04-20 08:40:58,069 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/team_stats_2025-26_20260420_083216.parquet
+2026-04-20 08:40:58,257 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/player_game_logs_20260420_083210.parquet
+2026-04-20 08:41:47,730 [agents.feature_agent] INFO: Player strength features computed: ['home_roster_gmscore', 'home_star_gmscore', 'home_roster_depth', 'home_star_dependency', 'home_roster_plus_minus', 'away_roster_gmscore', 'away_star_gmscore', 'away_roster_depth', 'away_star_dependency', 'away_roster_plus_minus', 'player_gmscore_diff', 'player_star_diff', 'player_depth_diff', 'player_plus_minus_diff']
+2026-04-20 08:41:47,741 [tools.features] INFO: Added momentum features: ['home_streak', 'away_streak', 'streak_diff', 'home_home_wpct', 'away_away_wpct', 'home_away_split']
+2026-04-20 08:41:47,743 [tools.features] INFO: Added H2H features: ['h2h_home_wpct', 'h2h_games']
+2026-04-20 08:41:47,745 [tools.features] INFO: Added SOS features: ['home_sos', 'away_sos', 'sos_diff']
+2026-04-20 08:41:47,747 [tools.features] INFO: Added advanced stats features: 33 columns
+2026-04-20 08:41:47,750 [tools.features] INFO: Added player strength features: 14 columns
+2026-04-20 08:41:47,775 [tools.storage] INFO: Saved 6140 rows to /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:41:47,776 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:41:50,137 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:41:50,141 [agents.base] INFO: [feature_agent] Calling tool: validate_features
+2026-04-20 08:41:50,143 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:41:50,154 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:41:52,185 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:41:52,188 [agents.base] INFO: [feature_agent] Calling tool: get_feature_info
+2026-04-20 08:41:52,190 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:09,286 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:09,290 [agents.base] INFO: [feature_agent] Completed in 5 iterations, 4 tool calls
+2026-04-20 08:42:09,290 [predicto] INFO: Feature Agent completed. Tool calls: 4
+2026-04-20 08:42:09,290 [predicto] INFO: 
+============================================================
+2026-04-20 08:42:09,290 [predicto] INFO: STEP 3: Meta-Scientist Agent
+2026-04-20 08:42:09,290 [predicto] INFO: ============================================================
+2026-04-20 08:42:09,299 [agents.base] INFO: [meta_scientist] Starting task: Design and run up to 5 experiments to find the best NBA prediction model.
+
+Your goal: find the metho...
+2026-04-20 08:42:11,948 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:11,950 [agents.base] INFO: [meta_scientist] Calling tool: read_scientist_history
+2026-04-20 08:42:14,611 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:14,615 [agents.base] INFO: [meta_scientist] Calling tool: get_experiment_history
+2026-04-20 08:42:17,682 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:17,685 [agents.base] INFO: [meta_scientist] Calling tool: get_feature_columns
+2026-04-20 08:42:17,687 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:25,334 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:25,335 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:42:25,336 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:25,345 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:25,351 [tools.experiments] INFO: Running experiment: Ridge Regression - Verify Best Model (L2, C=0.01) (method=logistic_regression)
+2026-04-20 08:42:25,439 [tools.experiments] INFO:   Experiment Ridge Regression - Verify Best Model (L2, C=0.01): log_loss=0.6203, brier=0.2155, accuracy=0.6559
+2026-04-20 08:42:31,802 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:31,805 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:42:31,806 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:31,815 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:31,821 [tools.experiments] INFO: Running experiment: Ridge Regression - 6 Core Features Only (method=logistic_regression)
+2026-04-20 08:42:31,848 [tools.experiments] INFO:   Experiment Ridge Regression - 6 Core Features Only: log_loss=0.6170, brier=0.2142, accuracy=0.6571
+2026-04-20 08:42:40,313 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:40,316 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:42:40,318 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:40,332 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:40,341 [tools.experiments] INFO: Running experiment: Ridge Regression - Stronger Regularization (C=0.005) (method=logistic_regression)
+2026-04-20 08:42:40,373 [tools.experiments] INFO:   Experiment Ridge Regression - Stronger Regularization (C=0.005): log_loss=0.6190, brier=0.2150, accuracy=0.6547
+2026-04-20 08:42:47,689 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:47,694 [agents.base] INFO: [meta_scientist] Calling tool: run_experiment
+2026-04-20 08:42:47,696 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:47,707 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:47,714 [tools.experiments] INFO: Running experiment: Ridge Regression - Optimal 14 Features (method=logistic_regression)
+2026-04-20 08:42:47,757 [tools.experiments] INFO:   Experiment Ridge Regression - Optimal 14 Features: log_loss=0.6163, brier=0.2139, accuracy=0.6551
+2026-04-20 08:42:53,112 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:42:53,115 [agents.base] INFO: [meta_scientist] Calling tool: run_ensemble
+2026-04-20 08:42:53,117 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:53,130 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:42:53,138 [tools.experiments] INFO: Running ensemble experiment: Ensemble - Ridge (14 features) + Conservative GB
+2026-04-20 08:43:20,986 [tools.experiments] INFO:   Ensemble Ensemble - Ridge (14 features) + Conservative GB: log_loss=0.6273, brier=0.2184
+2026-04-20 08:43:48,411 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:43:48,416 [agents.base] INFO: [meta_scientist] Calling tool: update_scientist_history
+2026-04-20 08:43:48,417 [agents.meta_scientist] INFO: Updated scientist history at /Users/alireza/Documents/projects/predicto/data/scientist_history.md
+2026-04-20 08:44:08,278 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:08,283 [agents.base] INFO: [meta_scientist] Completed in 10 iterations, 9 tool calls
+2026-04-20 08:44:08,283 [predicto] INFO: Meta-Scientist completed. Tool calls: 9
+2026-04-20 08:44:08,283 [predicto] INFO: 
+============================================================
+2026-04-20 08:44:08,284 [predicto] INFO: STEP 4: Evaluation Agent
+2026-04-20 08:44:08,284 [predicto] INFO: ============================================================
+2026-04-20 08:44:08,293 [agents.base] INFO: [eval_agent] Starting task: Evaluate all completed experiments. Compare them side by side. Check calibration of the best model. ...
+2026-04-20 08:44:10,223 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:10,225 [agents.base] INFO: [eval_agent] Calling tool: get_experiment_results
+2026-04-20 08:44:13,496 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:13,500 [agents.base] INFO: [eval_agent] Calling tool: compare_experiments
+2026-04-20 08:44:16,159 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:16,162 [agents.base] INFO: [eval_agent] Calling tool: evaluate_against_baselines
+2026-04-20 08:44:18,730 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:18,736 [agents.base] INFO: [eval_agent] Calling tool: compute_calibration
+2026-04-20 08:44:20,826 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:20,829 [agents.base] INFO: [eval_agent] Calling tool: make_promotion_decision
+2026-04-20 08:44:44,513 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:44,515 [agents.base] INFO: [eval_agent] Completed in 6 iterations, 5 tool calls
+2026-04-20 08:44:44,515 [predicto] INFO: Eval Agent completed. Tool calls: 5
+2026-04-20 08:44:44,515 [predicto] INFO: 
+============================================================
+2026-04-20 08:44:44,515 [predicto] INFO: STEP 5: Report Agent
+2026-04-20 08:44:44,515 [predicto] INFO: ============================================================
+2026-04-20 08:44:44,523 [agents.base] INFO: [report_agent] Starting task: Generate the final Predicto analysis report. IMPORTANT: Use compute_betting_edges to compare model p...
+2026-04-20 08:44:46,777 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:46,781 [agents.base] INFO: [report_agent] Calling tool: get_all_experiment_summary
+2026-04-20 08:44:48,466 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:48,469 [agents.base] INFO: [report_agent] Calling tool: get_promoted_model
+2026-04-20 08:44:50,258 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:50,261 [agents.base] INFO: [report_agent] Calling tool: get_upcoming_predictions
+2026-04-20 08:44:50,268 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:44:50,282 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/upcoming_games_20260420_083213.parquet
+2026-04-20 08:44:51,998 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:52,001 [agents.base] INFO: [report_agent] Calling tool: get_market_data
+2026-04-20 08:44:52,002 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_nba_20260420_083235.parquet
+2026-04-20 08:44:53,533 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:44:53,537 [agents.base] INFO: [report_agent] Calling tool: compute_betting_edges
+2026-04-20 08:44:53,538 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_game_markets_20260420_083219.parquet
+2026-04-20 08:44:53,547 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:44:53,602 [tools.polymarket] INFO:   Matched 2 games between predictions and markets
+2026-04-20 08:45:39,887 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:45:39,896 [agents.base] INFO: [report_agent] Calling tool: save_html_report
+2026-04-20 08:45:39,906 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/raw/polymarket_game_markets_20260420_083219.parquet
+2026-04-20 08:45:39,913 [tools.storage] INFO: Loading latest: /Users/alireza/Documents/projects/predicto/data/features/feature_matrix_20260420_084147.parquet
+2026-04-20 08:45:39,965 [tools.polymarket] INFO:   Matched 2 games between predictions and markets
+2026-04-20 08:45:39,967 [agents.report_agent] INFO: HTML report saved to /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_iter9_20260420_084539.html
+2026-04-20 08:45:48,420 [httpx] INFO: HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2026-04-20 08:45:48,423 [agents.base] INFO: [report_agent] Completed in 7 iterations, 6 tool calls
+2026-04-20 08:45:48,424 [predicto] INFO: Report Agent completed. Tool calls: 6
+2026-04-20 08:45:48,427 [predicto] INFO: 
+============================================================
+2026-04-20 08:45:48,427 [predicto] INFO: Pipeline Complete: Pipeline completed in 297s. Agents: 4, Total tool calls: 24
+2026-04-20 08:45:48,427 [predicto] INFO: ============================================================

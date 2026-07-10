@@ -34,7 +34,32 @@
       "Bash(rm -f /Users/alireza/Documents/projects/predicto/data/reports/predicto_report_*.html)",
       "Bash(grep -r \"player\" /Users/alireza/Documents/projects/predicto/tools/*.py)",
       "Bash(python3 -c \"from nba_api.stats import endpoints; import inspect; members = inspect.getmembers\\(endpoints, inspect.isclass\\); player_endpoints = [m for m in members if 'player' in m[0].lower\\(\\)]; print\\('\\\\\\\\n'.join\\([m[0] for m in player_endpoints[:20]]\\)\\)\")",
-      "Bash(grep -l \"injury\\\\|lineup\\\\|starter\" /Users/alireza/Documents/projects/predicto/.venv/lib/python3.9/site-packages/nba_api/stats/endpoints/*.py)"
+      "Bash(grep -l \"injury\\\\|lineup\\\\|starter\" /Users/alireza/Documents/projects/predicto/.venv/lib/python3.9/site-packages/nba_api/stats/endpoints/*.py)",
+      "Bash(ls -la /Users/alireza/Documents/projects/predicto/test*)",
+      "Bash(wc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create --repo alireza1989/predicto --base main --head main --title 'Upgrade web dashboard: stats panel, agent flow page, prompt editor, and rename' --body ':*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(gh pr create --repo alireza1989/predicto --base main --head feat/dashboard-upgrade --title 'Upgrade web dashboard: stats panel, agent flow page, prompt editor, and rename' --body ':*)",
+      "Bash(git pull:*)",
+      "Bash(gh pr create --repo alireza1989/predicto --base main --head fix/chart-svg-escaping --title 'Fix: convergence chart rendering as raw SVG text on dashboard' --body ':*)",
+      "Bash(.venv/bin/python -c ':*)",
+      "Bash(python3 -)",
+      "Bash(node -e \"require\\('pptxgenjs'\\); console.log\\('pptxgenjs OK'\\)\")",
+      "Bash(node -e \"require\\('react-icons/fa'\\); console.log\\('react-icons OK'\\)\")",
+      "Bash(npm list *)",
+      "Bash(npm -g root)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const r = require\\('/opt/homebrew/lib/node_modules/react-icons/fa'\\); console.log\\('react-icons OK, keys:', Object.keys\\(r\\).slice\\(0,3\\)\\)\")",
+      "Bash(NODE_PATH=/opt/homebrew/lib/node_modules node -e \"const p = require\\('pptxgenjs'\\); console.log\\('OK', typeof p\\)\")",
+      "Bash(NODE_PATH=/opt/homebrew/lib/node_modules node /tmp/predicto_deck.js)",
+      "Bash(python3 -m markitdown /tmp/predicto_pitch.pptx)",
+      "Bash(python3 -c ' *)",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(.venv/bin/pip install *)"
     ]
   }
 }

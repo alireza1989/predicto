@@ -2,6 +2,23 @@
 
 An autonomous, multi-agent system that predicts NBA game outcomes using machine learning, then compares those predictions against live Polymarket betting odds to surface potential mispricings. The system is self-improving: it runs experiments, learns from results, and converges toward better models across iterations — without human intervention.
 
+> **Platform upgrade (July 2026)** — Predicto is now a production meta data-scientist
+> platform. See [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) for the full roadmap. Highlights:
+>
+> - **Neon Postgres** is the production store (`DATABASE_URL`; SQLite fallback locally)
+> - **Live dashboard** (Next.js on Vercel): https://predicto-dashboard.vercel.app
+> - **Prediction ledger + CLV**: every prediction is recorded with the market price at
+>   that moment; paper trades (¼-Kelly) settle against closing lines — the
+>   industry-standard test of real edge
+> - **Critic agent** red-teams every model promotion (leakage/overfit/noise audit
+>   with a paired significance test) and has veto power
+> - **Modern model search**: Optuna hyperparameter search, CatBoost, TabPFN v2
+>   (tabular foundation model), isotonic calibration on out-of-fold predictions
+> - **Injury intelligence**: ESPN injury report with player-impact scoring, accruing
+>   a historical archive for future training features
+> - **GitHub Actions**: nightly pipeline + 30-minute odds snapshots during game hours
+> - **Leakage tests in CI**: features provably use only past data
+
 ---
 
 ## Table of Contents

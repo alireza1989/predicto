@@ -80,7 +80,8 @@ MODEL_REGISTRY = {
         "description": (
             "TabPFN v2 — tabular foundation model (pretrained transformer). "
             "No hyperparameters to tune; competitive with tuned GBDTs on "
-            "datasets of this size. Slower per fit (CPU), so use sparingly."
+            "datasets of this size. Automatically capped to the most recent "
+            "3000 games (CPU runtime); expect a few minutes per experiment."
         ),
     },
 }
@@ -153,6 +154,21 @@ def run_experiment(
 
     # Ensure data is sorted by date
     df = feature_matrix.sort_values("GAME_DATE").reset_index(drop=True)
+    positions = np.arange(len(df))
+
+    # TabPFN inference cost scales with train_size x test_size; a full
+    # 6k-game x 5-fold run takes >1h on CPU. Cap to the most recent games —
+    # training on recent history only is still time-series-valid. Positions
+    # are preserved so significance tests against uncapped experiments still
+    # align on shared games.
+    TABPFN_MAX_ROWS = 3000
+    if method == "tabpfn" and len(df) > TABPFN_MAX_ROWS:
+        logger.info(
+            "TabPFN: capping to most recent %d of %d games (CPU runtime)",
+            TABPFN_MAX_ROWS, len(df),
+        )
+        df = df.iloc[-TABPFN_MAX_ROWS:]
+        positions = positions[-TABPFN_MAX_ROWS:]
 
     # Validate feature columns exist
     missing = [c for c in feature_cols if c not in df.columns]
@@ -206,7 +222,7 @@ def run_experiment(
         fold_metrics["test_size"] = len(test_idx)
         fold_results.append(fold_metrics)
 
-        all_test_indices.extend(test_idx.tolist())
+        all_test_indices.extend(positions[test_idx].tolist())
         all_test_preds.extend(y_prob.tolist())
         all_test_true.extend(y_test.tolist())
 

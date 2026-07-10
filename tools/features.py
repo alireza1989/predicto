@@ -157,6 +157,163 @@ def compute_rest_days(matchups: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def compute_player_strength_features(
+    matchups: pd.DataFrame,
+    player_logs: pd.DataFrame,
+    window: int = 10,
+) -> pd.DataFrame:
+    """Compute roster-strength features from historical player game logs.
+
+    For each game, looks at the last `window` games each team's players
+    appeared in (BEFORE this game — no leakage) and computes:
+      - Roster strength score  (weighted sum of player efficiency)
+      - Star player form       (top scorer's rolling avg)
+      - Roster depth           (# of players with meaningful minutes)
+      - Star dependency        (% of team pts from top player)
+
+    All features computed with only past data. Missing player logs → 0 (neutral).
+
+    Args:
+        matchups: Game matchup DataFrame (needs GAME_ID, GAME_DATE, HOME_TEAM, AWAY_TEAM)
+        player_logs: Player game log DataFrame from fetch_player_game_logs()
+        window: Rolling window in games
+    """
+    if player_logs.empty:
+        logger.warning("No player logs provided — skipping player strength features")
+        return pd.DataFrame({"GAME_ID": matchups["GAME_ID"]})
+
+    matchups = matchups.sort_values("GAME_DATE").reset_index(drop=True)
+
+    # Ensure date types match
+    player_logs = player_logs.copy()
+    player_logs["GAME_DATE"] = pd.to_datetime(player_logs["GAME_DATE"])
+
+    # Game Score (John Hollinger) — compact single-number player quality metric
+    # GmSc = PTS + 0.4*FGM - 0.7*FGA - 0.4*(FTA-FTM) + 0.7*OREB + 0.3*DREB
+    #        + STL + 0.7*AST + 0.7*BLK - 0.4*PF - TOV
+    def game_score(row):
+        return (
+            row.get("PTS", 0) + 0.4 * row.get("FGM", 0)
+            - 0.7 * row.get("FGA", 0)
+            - 0.4 * (row.get("FTA", 0) - row.get("FTM", 0))
+            + 0.7 * row.get("OREB", 0) + 0.3 * row.get("DREB", 0)
+            + row.get("STL", 0) + 0.7 * row.get("AST", 0)
+            + 0.7 * row.get("BLK", 0) - 0.4 * row.get("PF", 0)
+            - row.get("TOV", 0)
+        )
+
+    player_logs["GAME_SCORE"] = player_logs.apply(game_score, axis=1)
+
+    # Build lookup: (team_abbrev, date) → player stats for that game
+    # Sort logs by date so we can efficiently query "all logs before date X for team T"
+    player_logs_sorted = player_logs.sort_values("GAME_DATE").reset_index(drop=True)
+
+    # Pre-build per-team history as a dict of lists (chronological)
+    # team_history[abbrev] = list of (game_date, player_id, pts, game_score, min_float, plus_minus)
+    team_history: dict = {}
+    for _, row in player_logs_sorted.iterrows():
+        team = row["TEAM_ABBREVIATION"]
+        if team not in team_history:
+            team_history[team] = []
+        team_history[team].append({
+            "date": row["GAME_DATE"],
+            "player_id": row["PLAYER_ID"],
+            "pts": float(row.get("PTS", 0) or 0),
+            "game_score": float(row.get("GAME_SCORE", 0) or 0),
+            "min": float(row.get("MIN_FLOAT", 0) or 0),
+            "plus_minus": float(row.get("PLUS_MINUS", 0) or 0),
+        })
+
+    def team_features_before(team: str, before_date, prefix: str) -> dict:
+        """Compute roster strength features for a team from games before a date."""
+        feats = {
+            f"{prefix}_roster_gmscore": 0.0,
+            f"{prefix}_star_gmscore": 0.0,
+            f"{prefix}_roster_depth": 0.0,
+            f"{prefix}_star_dependency": 0.0,
+            f"{prefix}_roster_plus_minus": 0.0,
+        }
+        if team not in team_history:
+            return feats
+
+        # Get all entries before this game date
+        past = [e for e in team_history[team] if e["date"] < before_date]
+        if not past:
+            return feats
+
+        # Get the last `window` unique game dates
+        unique_dates = sorted(set(e["date"] for e in past), reverse=True)[:window]
+        recent = [e for e in past if e["date"] in set(unique_dates)]
+
+        # Per-player aggregation over recent window
+        from collections import defaultdict
+        player_gms = defaultdict(list)
+        player_pm = defaultdict(list)
+        player_pts = defaultdict(list)
+        player_min = defaultdict(list)
+        for e in recent:
+            player_gms[e["player_id"]].append(e["game_score"])
+            player_pm[e["player_id"]].append(e["plus_minus"])
+            player_pts[e["player_id"]].append(e["pts"])
+            player_min[e["player_id"]].append(e["min"])
+
+        # Only count players who averaged meaningful minutes (≥10 avg)
+        active_players = {
+            pid: {
+                "avg_gmscore": float(np.mean(player_gms[pid])),
+                "avg_plus_minus": float(np.mean(player_pm[pid])),
+                "avg_pts": float(np.mean(player_pts[pid])),
+                "avg_min": float(np.mean(player_min[pid])),
+            }
+            for pid in player_gms
+            if np.mean(player_min[pid]) >= 10
+        }
+
+        if not active_players:
+            return feats
+
+        gm_scores = [p["avg_gmscore"] for p in active_players.values()]
+        pts_scores = [p["avg_pts"] for p in active_players.values()]
+        pm_scores  = [p["avg_plus_minus"] for p in active_players.values()]
+
+        total_gmscore = sum(gm_scores)
+        star_gmscore  = max(gm_scores) if gm_scores else 0
+        star_pts      = max(pts_scores) if pts_scores else 0
+        total_pts     = sum(pts_scores) if pts_scores else 1
+        depth         = len(active_players)  # # of players with ≥10 min
+        avg_pm        = float(np.mean(pm_scores)) if pm_scores else 0
+
+        feats[f"{prefix}_roster_gmscore"]    = round(total_gmscore, 3)
+        feats[f"{prefix}_star_gmscore"]      = round(star_gmscore, 3)
+        feats[f"{prefix}_roster_depth"]      = float(depth)
+        feats[f"{prefix}_star_dependency"]   = round(star_pts / max(total_pts, 1), 3)
+        feats[f"{prefix}_roster_plus_minus"] = round(avg_pm, 3)
+        return feats
+
+    records = []
+    for _, row in matchups.iterrows():
+        game_date = pd.to_datetime(row["GAME_DATE"])
+        home = row["HOME_TEAM"]
+        away = row["AWAY_TEAM"]
+
+        home_feats = team_features_before(home, game_date, "home")
+        away_feats = team_features_before(away, game_date, "away")
+
+        combined = {"GAME_ID": row["GAME_ID"]}
+        combined.update(home_feats)
+        combined.update(away_feats)
+
+        # Differentials — most predictive for model
+        combined["player_gmscore_diff"]    = round(home_feats["home_roster_gmscore"] - away_feats["away_roster_gmscore"], 3)
+        combined["player_star_diff"]       = round(home_feats["home_star_gmscore"] - away_feats["away_star_gmscore"], 3)
+        combined["player_depth_diff"]      = home_feats["home_roster_depth"] - away_feats["away_roster_depth"]
+        combined["player_plus_minus_diff"] = round(home_feats["home_roster_plus_minus"] - away_feats["away_roster_plus_minus"], 3)
+
+        records.append(combined)
+
+    return pd.DataFrame(records)
+
+
 def compute_momentum_features(matchups: pd.DataFrame) -> pd.DataFrame:
     """Compute win streak, momentum, and trend features.
 
@@ -405,6 +562,7 @@ def build_feature_matrix(
     h2h_df: pd.DataFrame = None,
     sos_df: pd.DataFrame = None,
     advanced_df: pd.DataFrame = None,
+    player_df: pd.DataFrame = None,
 ) -> pd.DataFrame:
     """Combine all features into a single feature matrix.
 
@@ -441,6 +599,12 @@ def build_feature_matrix(
         if adv_cols:
             features = features.merge(advanced_df, on="GAME_ID", how="left")
             logger.info(f"Added advanced stats features: {len(adv_cols)} columns")
+
+    if player_df is not None and not player_df.empty:
+        player_cols = [c for c in player_df.columns if c != "GAME_ID"]
+        if player_cols:
+            features = features.merge(player_df, on="GAME_ID", how="left")
+            logger.info(f"Added player strength features: {len(player_cols)} columns")
 
     # Fill any NaN with defaults
     features = features.fillna(0)

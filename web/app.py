@@ -241,11 +241,14 @@ def _reset_agent_prompt(agent_id: str) -> bool:
 
 # ── Pipeline runner ───────────────────────────────────────────────────────────
 
-def _run_pipeline_thread():
+def _run_pipeline_thread(fetch_data: bool = False):
     global _pipeline_status
     try:
+        cmd = [sys.executable, str(BASE_DIR / "main.py")]
+        if not fetch_data:
+            cmd.append("--skip-data")
         proc = subprocess.Popen(
-            [sys.executable, str(BASE_DIR / "main.py"), "--skip-data"],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -475,10 +478,14 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   </div>
 
   <!-- Actions -->
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:28px;">
-    <button class="btn btn-primary" id="runBtn" onclick="startPipeline()">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:28px;">
+    <button class="btn btn-primary" id="runBtn" onclick="startPipeline(false)">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg>
       Run New Iteration
+    </button>
+    <button class="btn" id="runDataBtn" onclick="startPipeline(true)" style="background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 0 1 5 5v1h1a2 2 0 0 1 0 4h-1v1a5 5 0 0 1-10 0v-1H2a2 2 0 0 1 0-4h1V6a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v1h6V6a3 3 0 0 0-3-3z"/></svg>
+      Fetch Data &amp; Run
     </button>
     <button class="btn btn-secondary" onclick="location.reload()">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 7a6 6 0 1 1 1.5 3.9"/><path d="M1 11V7h4"/></svg>
@@ -637,14 +644,15 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <script>
 let polling = null;
 
-function startPipeline() {
+function startPipeline(fetchData) {
   const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div> Running...';
+  const btnData = document.getElementById('runDataBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Running...'; }
+  if (btnData) btnData.disabled = true;
   document.getElementById('statusBanner').classList.add('active');
-  document.getElementById('logArea').textContent = 'Starting pipeline...\\n';
+  document.getElementById('logArea').textContent = (fetchData ? 'Fetching data + running pipeline...' : 'Starting pipeline...') + '\\n';
 
-  fetch('/api/run', { method:'POST' })
+  fetch('/api/run', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({fetch_data: !!fetchData}) })
     .then(r => r.json())
     .then(data => {
       if (data.error) { alert(data.error); resetBtn(); return; }
@@ -654,8 +662,9 @@ function startPipeline() {
 
 function resetBtn() {
   const btn = document.getElementById('runBtn');
-  btn.disabled = false;
-  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg> Run New Iteration';
+  const btnData = document.getElementById('runDataBtn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg> Run New Iteration'; }
+  if (btnData) btnData.disabled = false;
 }
 
 function pollStatus() {
@@ -749,7 +758,7 @@ AGENTS_HTML = """<!DOCTYPE html>
       <div class="section-title">Agentic Pipeline</div>
       <div style="color:var(--text-dim);font-size:0.82rem;margin-top:4px;">5 specialized agents run in sequence each iteration. Click any agent below to view and edit its system prompt.</div>
     </div>
-    <button class="btn btn-primary" id="runBtn" onclick="startPipeline()">
+    <button class="btn btn-primary" id="runBtn" onclick="startPipeline(false)">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg>
       Run New Iteration
     </button>
@@ -917,14 +926,15 @@ function resetPrompt(agentId) {
 }
 
 let polling = null;
-function startPipeline() {
+function startPipeline(fetchData) {
   const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div> Running...';
+  const btnData = document.getElementById('runDataBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Running...'; }
+  if (btnData) btnData.disabled = true;
   document.getElementById('statusBanner').classList.add('active');
-  document.getElementById('logArea').textContent = 'Starting pipeline...\\n';
-  fetch('/api/run', { method:'POST' }).then(r => r.json()).then(data => {
-    if (data.error) { alert(data.error); btn.disabled = false; btn.innerHTML = '▶ Run New Iteration'; return; }
+  document.getElementById('logArea').textContent = (fetchData ? 'Fetching data + running pipeline...' : 'Starting pipeline...') + '\\n';
+  fetch('/api/run', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({fetch_data: !!fetchData}) }).then(r => r.json()).then(data => {
+    if (data.error) { alert(data.error); if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg> Run New Iteration'; } if (btnData) btnData.disabled = false; return; }
     polling = setInterval(pollStatus, 2000);
   });
 }
@@ -935,8 +945,10 @@ function pollStatus() {
     la.scrollTop = la.scrollHeight;
     if (!data.running) {
       clearInterval(polling);
-      document.getElementById('runBtn').disabled = false;
-      document.getElementById('runBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg> Run New Iteration';
+      const rb = document.getElementById('runBtn');
+      const rbd = document.getElementById('runDataBtn');
+      if (rb) { rb.disabled = false; rb.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,2 14,8 4,14"/></svg> Run New Iteration'; }
+      if (rbd) rbd.disabled = false;
       document.getElementById('statusSpinner').style.display = 'none';
       const st = document.getElementById('statusText');
       st.textContent = data.error ? 'Failed: ' + data.error : 'Done!';
@@ -1013,14 +1025,17 @@ def view_report(filename):
 @app.route("/api/run", methods=["POST"])
 def start_run():
     global _pipeline_status
+    data = request.get_json(silent=True) or {}
+    fetch_data = bool(data.get("fetch_data", False))
     with _pipeline_lock:
         if _pipeline_status["running"]:
             return jsonify({"error": "Pipeline is already running"})
         _pipeline_status = {"running": True, "started": datetime.now().isoformat(),
-                            "log": "", "finished": None, "error": None}
-    thread = threading.Thread(target=_run_pipeline_thread, daemon=True)
+                            "log": "", "finished": None, "error": None,
+                            "fetch_data": fetch_data}
+    thread = threading.Thread(target=_run_pipeline_thread, args=(fetch_data,), daemon=True)
     thread.start()
-    return jsonify({"status": "started"})
+    return jsonify({"status": "started", "fetch_data": fetch_data})
 
 
 @app.route("/api/status")

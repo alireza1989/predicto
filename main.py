@@ -86,8 +86,9 @@ def run_pipeline(config: dict, skip_data: bool = False, skip_markets: bool = Fal
         task = f"""Collect NBA data for the prediction system.
 
 1. Fetch historical NBA game results for seasons: {seasons}
-2. Fetch upcoming NBA games for the next {horizon} days
-3. Fetch advanced team stats for the most recent season ({seasons[-1]})"""
+2. Fetch player game logs for the SAME seasons: {seasons} — call fetch_player_logs with the same season list. This is critical for roster-strength features in the Feature Agent.
+3. Fetch upcoming NBA games for the next {horizon} days
+4. Fetch advanced team stats for the most recent season ({seasons[-1]})"""
 
         if not skip_markets:
             task += f"""

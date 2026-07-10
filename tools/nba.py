@@ -10,7 +10,7 @@ from typing import Optional
 
 import pandas as pd
 import requests
-from nba_api.stats.endpoints import leaguegamelog, leaguedashteamstats
+from nba_api.stats.endpoints import leaguegamelog, leaguedashteamstats, commonteamroster
 from nba_api.stats.static import teams as nba_teams
 
 logger = logging.getLogger(__name__)
@@ -155,6 +155,91 @@ def fetch_upcoming_games(horizon_days: int = 14) -> pd.DataFrame:
     df = pd.DataFrame(games)
     logger.info(f"  Found {len(df)} upcoming games")
     return df
+
+
+def fetch_player_game_logs(
+    seasons: list[str],
+    season_type: str = "Regular Season",
+    delay: float = 1.5,
+) -> pd.DataFrame:
+    """Fetch per-player per-game stats for multiple seasons in one call each.
+
+    Uses LeagueGameLog with player_or_team_abbreviation='P' — returns one row
+    per player per game with MIN, PTS, REB, AST, STL, BLK, TOV, PLUS_MINUS, etc.
+
+    Args:
+        seasons: List of season strings like ['2023-24', '2024-25']
+        season_type: 'Regular Season' or 'Playoffs'
+        delay: Seconds to wait between requests (rate limiting)
+
+    Returns:
+        Combined DataFrame across all seasons.
+    """
+    all_dfs = []
+    for season in seasons:
+        logger.info(f"Fetching player game logs for {season}...")
+        try:
+            log = leaguegamelog.LeagueGameLog(
+                season=season,
+                season_type_all_star=season_type,
+                player_or_team_abbreviation="P",
+                direction="ASC",
+                sorter="DATE",
+                headers=STATS_HEADERS,
+                timeout=60,
+            )
+            time.sleep(delay)
+            df = log.get_data_frames()[0]
+            df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"])
+            df["SEASON"] = season
+
+            # Parse minutes to float (format can be "MM:SS" or plain number)
+            def parse_min(m):
+                try:
+                    if isinstance(m, str) and ":" in m:
+                        parts = m.split(":")
+                        return float(parts[0]) + float(parts[1]) / 60
+                    return float(m) if m else 0.0
+                except Exception:
+                    return 0.0
+
+            df["MIN_FLOAT"] = df["MIN"].apply(parse_min)
+            logger.info(f"  Got {len(df)} player-game rows for {season}")
+            all_dfs.append(df)
+        except Exception as e:
+            logger.error(f"Failed to fetch player logs for {season}: {e}")
+
+    if not all_dfs:
+        return pd.DataFrame()
+    combined = pd.concat(all_dfs, ignore_index=True)
+    combined = combined.sort_values("GAME_DATE").reset_index(drop=True)
+    return combined
+
+
+def fetch_team_rosters(delay: float = 0.6) -> pd.DataFrame:
+    """Fetch current active rosters for all 30 NBA teams.
+
+    Returns DataFrame with TEAM_ID, TEAM_ABBREVIATION, PLAYER_ID, PLAYER, POSITION.
+    Useful for upcoming-game player strength estimates.
+    """
+    all_teams = nba_teams.get_teams()
+    records = []
+    for team in all_teams:
+        try:
+            roster = commonteamroster.CommonTeamRoster(
+                team_id=team["id"],
+                headers=STATS_HEADERS,
+                timeout=30,
+            )
+            time.sleep(delay)
+            df = roster.get_data_frames()[0]
+            df["TEAM_ABBREVIATION"] = team["abbreviation"]
+            records.append(df)
+        except Exception as e:
+            logger.warning(f"Failed roster for {team['abbreviation']}: {e}")
+    if not records:
+        return pd.DataFrame()
+    return pd.concat(records, ignore_index=True)
 
 
 def games_to_matchups(games_df: pd.DataFrame) -> pd.DataFrame:

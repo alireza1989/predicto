@@ -118,6 +118,32 @@ def _build_tools(config: dict) -> list[Tool]:
             "saved_to": str(path),
         })
 
+    def fetch_player_logs(seasons: list[str]) -> str:
+        """Fetch per-player per-game stats for the specified seasons.
+
+        Returns game score, points, rebounds, assists, plus/minus and minutes
+        for every player in every game. Used by the Feature Agent to compute
+        roster-strength features.
+        """
+        delay = config.get("nba", {}).get("request_delay", 1.5)
+        logs_df = nba.fetch_player_game_logs(seasons, delay=delay)
+        if logs_df.empty:
+            return json.dumps({"status": "error", "message": "No player logs fetched"})
+
+        path = storage.save_parquet(logs_df, "data/raw/player_game_logs.parquet")
+        # Summary per season
+        season_counts = logs_df.groupby("SEASON").size().to_dict()
+        players_count = logs_df["PLAYER_ID"].nunique()
+        return json.dumps({
+            "status": "success",
+            "total_rows": len(logs_df),
+            "unique_players": players_count,
+            "seasons": season_counts,
+            "columns": [c for c in logs_df.columns if c not in ["SEASON_ID", "VIDEO_AVAILABLE"]],
+            "sample": logs_df[["PLAYER_NAME", "TEAM_ABBREVIATION", "GAME_DATE", "MIN", "PTS", "REB", "AST", "PLUS_MINUS"]].head(5).to_dict(orient="records"),
+            "saved_to": str(path),
+        }, default=str)
+
     def get_all_nba_teams() -> str:
         """Get list of all NBA teams with IDs."""
         teams = nba.get_all_teams()
@@ -185,6 +211,22 @@ def _build_tools(config: dict) -> list[Tool]:
             func=fetch_polymarket_game_markets,
         ),
         Tool(
+            name="fetch_player_logs",
+            description="Fetch per-player per-game stats (PTS, REB, AST, STL, BLK, TOV, PLUS_MINUS, MIN) for specified seasons. IMPORTANT: call this after fetch_nba_games so the Feature Agent can compute player-strength features.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "seasons": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Seasons to fetch, e.g. ['2022-23', '2023-24', '2024-25']"
+                    }
+                },
+                "required": ["seasons"]
+            },
+            func=fetch_player_logs,
+        ),
+        Tool(
             name="get_all_nba_teams",
             description="Get list of all 30 NBA teams with IDs and metadata.",
             input_schema={"type": "object", "properties": {}},
@@ -201,11 +243,12 @@ Your job is to collect and store raw data from two sources:
 2. **Polymarket** prediction market data (NBA markets, prices, orderbooks)
 
 ## Your workflow:
-1. First, fetch historical NBA game results for the requested seasons
-2. Fetch upcoming NBA games
-3. Fetch advanced team stats for the current/recent season
-4. Fetch Polymarket GAME-LEVEL markets (fetch_polymarket_game_markets) — this gets actual moneyline odds for specific NBA games
-5. Optionally search broader Polymarket NBA markets and enrich with orderbooks
+1. Fetch historical NBA game results for the requested seasons (fetch_nba_games)
+2. Fetch player game logs for the SAME seasons (fetch_player_logs) — critical for roster-strength features
+3. Fetch upcoming NBA games (fetch_upcoming_nba_games)
+4. Fetch advanced team stats for the current/recent season (fetch_team_stats)
+5. Fetch Polymarket GAME-LEVEL markets (fetch_polymarket_game_markets) — actual moneyline odds
+6. Optionally search broader Polymarket NBA markets and enrich with orderbooks
 
 ## Important rules:
 - Always fetch data in the order above (games first, then markets)

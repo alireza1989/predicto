@@ -47,6 +47,15 @@ def _build_tools(config: dict) -> list[Tool]:
         sos_df = features.compute_strength_of_schedule(matchups, elo_df)
         advanced_df = features.compute_advanced_stats_features(matchups)
 
+        # Player strength features (requires player game logs)
+        player_logs = storage.load_latest_parquet("data/raw", "player_game_logs")
+        if not player_logs.empty:
+            player_df = features.compute_player_strength_features(matchups, player_logs)
+            logger.info(f"Player strength features computed: {[c for c in player_df.columns if c != 'GAME_ID']}")
+        else:
+            player_df = None
+            logger.warning("No player game logs found — skipping player features. Run data agent with fetch_player_logs first.")
+
         # Combine all
         feature_matrix = features.build_feature_matrix(
             elo_df, rolling_df, rest_df,
@@ -54,6 +63,7 @@ def _build_tools(config: dict) -> list[Tool]:
             h2h_df=h2h_df,
             sos_df=sos_df,
             advanced_df=advanced_df,
+            player_df=player_df,
         )
 
         # Save

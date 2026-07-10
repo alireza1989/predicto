@@ -116,24 +116,35 @@ def _build_tools(config: dict) -> list[Tool]:
         if game_markets.empty:
             return json.dumps({"status": "no_game_markets", "message": "No Polymarket game markets found. Run data agent with fetch_polymarket_game_markets first."})
 
-        # Get best model and generate predictions
+        # Model selection: the CHAMPION from the promotions table (critic-
+        # audited) outranks raw best-by-log-loss — a vetoed model must never
+        # produce live predictions, however good its average metric looks.
+        import os
         conn = storage.init_db()
-        history = storage.get_experiment_history(conn, limit=50)
+        history = storage.get_experiment_history(conn, limit=100)
+        champ_row = conn.execute(
+            """SELECT experiment_id FROM promotions
+               WHERE retired_at IS NULL ORDER BY promoted_at DESC LIMIT 1"""
+        ).fetchone()
         conn.close()
 
         completed = [e for e in history if e["status"] == "completed" and e.get("metrics", {}).get("log_loss")]
         if not completed:
             return json.dumps({"status": "no_model", "message": "No trained model found"})
 
-        # Find best model that has a saved artifact (ensembles don't save model.pkl)
-        import os
-        completed_sorted = sorted(completed, key=lambda e: e["metrics"]["log_loss"])
+        def has_artifact(e):
+            return os.path.exists(f"data/experiments/{e['experiment_id']}/model.pkl")
+
         best = None
-        for candidate in completed_sorted:
-            artifact_path = f"data/experiments/{candidate['experiment_id']}/model.pkl"
-            if os.path.exists(artifact_path):
-                best = candidate
-                break
+        if champ_row:
+            best = next((e for e in completed
+                         if e["experiment_id"] == champ_row[0] and has_artifact(e)), None)
+        if not best:
+            # No usable champion — fall back to best-by-log-loss with artifact
+            for candidate in sorted(completed, key=lambda e: e["metrics"]["log_loss"]):
+                if has_artifact(candidate):
+                    best = candidate
+                    break
         if not best:
             return json.dumps({"status": "no_model", "message": "No model with saved artifact found"})
 

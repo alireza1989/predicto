@@ -14,9 +14,14 @@ scikit-learn>=1.4
 lightgbm>=4.0
 torch>=2.0
 xgboost>=2.0
+catboost>=1.2
+optuna>=3.6
+scipy>=1.10
+tabpfn>=2,<3  # v2.x downloads weights without a token; v8+ needs TABPFN_TOKEN
 
 # Storage
 duckdb>=0.10
+psycopg[binary]>=3.1  # Neon Postgres (DATABASE_URL); SQLite is the fallback
 
 # Web
 flask>=3.0

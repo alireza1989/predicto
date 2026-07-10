@@ -1,0 +1,70 @@
+name: Nightly Pipeline
+
+on:
+  schedule:
+    # 10:07 UTC ≈ 6:07am ET — after all games have settled
+    - cron: "7 10 * * *"
+  workflow_dispatch:
+    inputs:
+      skip_data:
+        description: "Skip data collection (use seeded/cached data)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Seed data fallback
+        # stats.nba.com frequently blocks cloud-runner IPs; the seeded
+        # snapshot guarantees the pipeline can always run end-to-end on
+        # last-known data if the live fetch fails.
+        run: |
+          mkdir -p data/raw data/features data/experiments data/reports
+          for f in data/seed/*.parquet; do
+            cp "$f" "data/raw/$(basename "$f")"
+          done
+
+      - name: Run pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ "${{ inputs.skip_data }}" = "true" ]; then
+            python main.py --skip-data
+          else
+            python main.py
+          fi
+
+      - name: Settle predictions and snapshot summary
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python scripts/market_ops.py settle || true
+          python scripts/market_ops.py summary || true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: data/reports/*.html
+          if-no-files-found: ignore
+          retention-days: 14
+

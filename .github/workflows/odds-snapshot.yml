@@ -1,0 +1,35 @@
+name: Odds Snapshot
+
+on:
+  schedule:
+    # Every 30 min during NBA game hours (16:03–03:33 UTC ≈ noon–11:30pm ET).
+    # Cheap deterministic job — no LLM calls — that feeds closing-line-value
+    # analysis. Off-minute (:03/:33) to avoid the top-of-hour stampede.
+    - cron: "3,33 16-23 * * *"
+    - cron: "3,33 0-3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: odds-snapshot
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install minimal deps
+        run: pip install pandas pyarrow requests pyyaml python-dotenv "psycopg[binary]"
+      - name: Seed schedule data
+        run: |
+          mkdir -p data/raw
+          cp data/seed/upcoming_games.parquet data/raw/ 2>/dev/null || true
+      - name: Snapshot odds
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/market_ops.py snapshot

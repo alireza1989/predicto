@@ -149,6 +149,37 @@ def _build_tools(config: dict) -> list[Tool]:
         teams = nba.get_all_teams()
         return teams.to_json(orient="records")
 
+    def fetch_injury_report() -> str:
+        """Fetch the current NBA injury report (ESPN), score player impact
+        from recent game logs, save it, and accrue a historical snapshot."""
+        from sources import REGISTRY
+        from sources import espn_injuries as inj_mod
+
+        src = REGISTRY["espn_injuries"]
+        injuries = src.fetch()
+        if injuries.empty:
+            return json.dumps({"status": "error", "message": "Injury fetch returned nothing"})
+
+        player_logs = storage.load_latest_parquet("data/raw", "player_game_logs")
+        injuries = inj_mod.compute_impact_scores(injuries, player_logs)
+        path = storage.save_parquet(injuries, "data/raw/injuries.parquet")
+
+        conn = storage.init_db()
+        n = inj_mod.snapshot_injuries(conn, injuries)
+        conn.close()
+
+        team_impact = inj_mod.team_injury_impact(
+            injuries[injuries["status"].isin(inj_mod.OUT_STATUSES | inj_mod.QUESTIONABLE_STATUSES)]
+        )
+        top = sorted(team_impact.items(), key=lambda kv: -kv[1])[:8]
+        return json.dumps({
+            "status": "success",
+            "players_listed": len(injuries),
+            "snapshots_accrued": n,
+            "most_impacted_teams": dict(top),
+            "saved_to": str(path),
+        }, default=str)
+
     return [
         Tool(
             name="fetch_nba_games",
@@ -231,6 +262,12 @@ def _build_tools(config: dict) -> list[Tool]:
             description="Get list of all 30 NBA teams with IDs and metadata.",
             input_schema={"type": "object", "properties": {}},
             func=get_all_nba_teams,
+        ),
+        Tool(
+            name="fetch_injury_report",
+            description="Fetch the current NBA injury report with per-player impact scores (from recent production). Accrues a historical snapshot for future training features. Call this every run — the archive only grows if we fetch daily.",
+            input_schema={"type": "object", "properties": {}},
+            func=fetch_injury_report,
         ),
     ]
 

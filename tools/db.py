@@ -153,6 +153,16 @@ SCHEMA_TABLES = {
             status TEXT DEFAULT 'open',
             created_at TEXT NOT NULL
         )""",
+    "injury_snapshots": """
+        CREATE TABLE IF NOT EXISTS injury_snapshots (
+            snapshot_id TEXT PRIMARY KEY,
+            team TEXT NOT NULL,
+            player TEXT NOT NULL,
+            status TEXT,
+            detail TEXT,
+            impact_score REAL,
+            captured_at TEXT NOT NULL
+        )""",
     "data_sources": """
         CREATE TABLE IF NOT EXISTS data_sources (
             source_id TEXT PRIMARY KEY,

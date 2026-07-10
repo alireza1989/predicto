@@ -66,6 +66,23 @@ MODEL_REGISTRY = {
         },
         "description": "Multi-layer perceptron. Captures complex patterns.",
     },
+    "catboost": {
+        "class": None,  # handled separately
+        "default_params": {
+            "iterations": 300, "depth": 5, "learning_rate": 0.05,
+            "l2_leaf_reg": 10, "verbose": 0, "allow_writing_files": False,
+        },
+        "description": "CatBoost. Ordered boosting, strong on small tabular data.",
+    },
+    "tabpfn": {
+        "class": None,  # handled separately
+        "default_params": {},
+        "description": (
+            "TabPFN v2 — tabular foundation model (pretrained transformer). "
+            "No hyperparameters to tune; competitive with tuned GBDTs on "
+            "datasets of this size. Slower per fit (CPU), so use sparingly."
+        ),
+    },
 }
 
 
@@ -91,6 +108,12 @@ def _create_model(method: str, params: Optional[dict] = None):
     elif method == "xgboost":
         import xgboost as xgb
         return xgb.XGBClassifier(**model_params, use_label_encoder=False, eval_metric="logloss")
+    elif method == "catboost":
+        from catboost import CatBoostClassifier
+        return CatBoostClassifier(**model_params)
+    elif method == "tabpfn":
+        from tabpfn import TabPFNClassifier
+        return TabPFNClassifier(**model_params)
     else:
         return info["class"](**model_params)
 
@@ -207,6 +230,20 @@ def run_experiment(
     # Overall metrics on all OOS predictions
     overall = compute_metrics(np.array(all_test_true), np.array(all_test_preds))
 
+    # Post-hoc calibration: fit isotonic regression on the out-of-fold
+    # predictions (never on training data). Stored with the artifact so
+    # inference can emit calibrated probabilities.
+    calibrator = None
+    if calibrate and len(all_test_preds) >= 200:
+        from sklearn.isotonic import IsotonicRegression
+        calibrator = IsotonicRegression(y_min=0.01, y_max=0.99, out_of_bounds="clip")
+        calibrator.fit(np.array(all_test_preds), np.array(all_test_true))
+        calibrated_preds = calibrator.predict(np.array(all_test_preds))
+        overall_calibrated = compute_metrics(np.array(all_test_true), calibrated_preds)
+        # In-sample for the calibrator (it saw these preds), so treat as an
+        # optimistic estimate — reported separately, never used for ranking.
+        overall["calibrated_log_loss_insample"] = overall_calibrated["log_loss"]
+
     # Train final model on all data
     scaler_final = StandardScaler()
     X_scaled = scaler_final.fit_transform(X)
@@ -218,7 +255,8 @@ def run_experiment(
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
     with open(artifact_dir / "model.pkl", "wb") as f:
-        pickle.dump({"model": final_model, "scaler": scaler_final, "feature_cols": feature_cols}, f)
+        pickle.dump({"model": final_model, "scaler": scaler_final,
+                     "feature_cols": feature_cols, "calibrator": calibrator}, f)
 
     # Save predictions
     preds_df = pd.DataFrame({
@@ -390,5 +428,139 @@ def predict_upcoming(
         probs = model.predict(X_scaled).astype(float)
 
     result = upcoming_features.copy()
-    result["model_prob"] = probs
+    result["model_prob_raw"] = probs
+    calibrator = artifact.get("calibrator")
+    result["model_prob"] = calibrator.predict(probs) if calibrator is not None else probs
     return result
+
+
+def run_optuna_search(
+    feature_matrix: pd.DataFrame,
+    feature_cols: list[str],
+    method: str = "logistic_regression",
+    n_trials: int = 30,
+    target_col: str = "HOME_WIN",
+    n_splits: int = 5,
+    run_id: Optional[str] = None,
+) -> dict:
+    """Hyperparameter search with Optuna (TPE + median pruning), then run a
+    full experiment with the best parameters found.
+
+    Objective: mean walk-forward CV log loss (lower is better).
+    """
+    import optuna
+    from sklearn.metrics import log_loss as sk_log_loss
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    df = feature_matrix.sort_values("GAME_DATE").reset_index(drop=True)
+    X = df[feature_cols].values.astype(float)
+    y = df[target_col].values.astype(int)
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    splits = list(tscv.split(X))
+
+    def suggest_params(trial):
+        if method == "logistic_regression":
+            return {"C": trial.suggest_float("C", 1e-4, 10, log=True),
+                    "max_iter": 2000}
+        if method in ("gradient_boosting",):
+            return {"n_estimators": trial.suggest_int("n_estimators", 50, 400),
+                    "max_depth": trial.suggest_int("max_depth", 2, 6),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2, log=True),
+                    "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+                    "min_samples_leaf": trial.suggest_int("min_samples_leaf", 5, 60)}
+        if method in ("lightgbm", "xgboost"):
+            return {"n_estimators": trial.suggest_int("n_estimators", 50, 500),
+                    "max_depth": trial.suggest_int("max_depth", 2, 7),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2, log=True),
+                    "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+                    "colsample_bytree": trial.suggest_float("colsample_bytree", 0.4, 1.0),
+                    **({"num_leaves": trial.suggest_int("num_leaves", 7, 63),
+                        "min_child_samples": trial.suggest_int("min_child_samples", 10, 80),
+                        "verbosity": -1} if method == "lightgbm" else
+                       {"min_child_weight": trial.suggest_int("min_child_weight", 1, 40),
+                        "verbosity": 0})}
+        if method == "catboost":
+            return {"iterations": trial.suggest_int("iterations", 100, 600),
+                    "depth": trial.suggest_int("depth", 2, 7),
+                    "learning_rate": trial.suggest_float("learning_rate", 0.005, 0.2, log=True),
+                    "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1, 50, log=True),
+                    "verbose": 0, "allow_writing_files": False}
+        raise ValueError(f"No Optuna search space for method: {method}")
+
+    def objective(trial):
+        params = suggest_params(trial)
+        losses = []
+        for step, (train_idx, test_idx) in enumerate(splits):
+            scaler = StandardScaler()
+            X_tr = scaler.fit_transform(X[train_idx])
+            X_te = scaler.transform(X[test_idx])
+            model = _create_model(method, params)
+            model.fit(X_tr, y[train_idx])
+            prob = model.predict_proba(X_te)[:, 1]
+            losses.append(sk_log_loss(y[test_idx], np.clip(prob, 1e-6, 1 - 1e-6)))
+            trial.report(float(np.mean(losses)), step)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+        return float(np.mean(losses))
+
+    study = optuna.create_study(direction="minimize",
+                                sampler=optuna.samplers.TPESampler(seed=42),
+                                pruner=optuna.pruners.MedianPruner(n_warmup_steps=2))
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+
+    best_params = suggest_params(optuna.trial.FixedTrial(study.best_params))
+    result = run_experiment(
+        feature_matrix, feature_cols, target_col=target_col, method=method,
+        model_params=best_params, n_splits=n_splits,
+        experiment_name=f"{method}_optuna{n_trials}", run_id=run_id,
+    )
+    result["optuna"] = {
+        "n_trials": n_trials,
+        "best_cv_log_loss": round(study.best_value, 6),
+        "best_params": {k: (round(v, 6) if isinstance(v, float) else v)
+                        for k, v in study.best_params.items()},
+    }
+    return result
+
+
+def compare_experiments_significance(exp_dir_a: str, exp_dir_b: str) -> dict:
+    """Paired significance test between two experiments' out-of-fold
+    predictions (per-game log-loss differences on shared games).
+
+    A challenger should only replace the champion if it is BOTH lower in
+    log loss AND significant here (guards against promotion-by-noise).
+    """
+    from scipy import stats
+
+    def load(exp_dir):
+        p = Path(exp_dir) / "predictions.parquet"
+        if not p.exists():
+            raise FileNotFoundError(f"No predictions at {p}")
+        return pd.read_parquet(p)
+
+    a, b = load(exp_dir_a), load(exp_dir_b)
+    merged = a.merge(b, on="index", suffixes=("_a", "_b"))
+    if len(merged) < 100:
+        return {"error": f"Only {len(merged)} shared games — need >= 100"}
+    if not (merged["y_true_a"] == merged["y_true_b"]).all():
+        return {"error": "Experiments evaluated on different targets — not comparable"}
+
+    y = merged["y_true_a"].values.astype(float)
+    eps = 1e-6
+    pa = np.clip(merged["y_prob_a"].values, eps, 1 - eps)
+    pb = np.clip(merged["y_prob_b"].values, eps, 1 - eps)
+    loss_a = -(y * np.log(pa) + (1 - y) * np.log(1 - pa))
+    loss_b = -(y * np.log(pb) + (1 - y) * np.log(1 - pb))
+    diff = loss_a - loss_b  # positive → B is better
+
+    t_stat, p_value = stats.ttest_rel(loss_a, loss_b)
+    return {
+        "shared_games": int(len(merged)),
+        "log_loss_a": round(float(loss_a.mean()), 6),
+        "log_loss_b": round(float(loss_b.mean()), 6),
+        "mean_diff_a_minus_b": round(float(diff.mean()), 6),
+        "t_stat": round(float(t_stat), 4),
+        "p_value": round(float(p_value), 6),
+        "b_significantly_better": bool(diff.mean() > 0 and p_value < 0.05),
+    }

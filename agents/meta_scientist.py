@@ -147,6 +147,76 @@ def _build_tools(config: dict) -> list[Tool]:
             "status": result["status"],
         }, indent=2, default=str)
 
+    def run_hyperparameter_search(
+        method: str,
+        n_trials: int = 30,
+        feature_subset: Optional[list[str]] = None,
+    ) -> str:
+        """Optuna TPE search over the method's space, then a full experiment."""
+        fm = storage.load_latest_parquet("data/features", "feature_matrix")
+        if fm.empty:
+            return json.dumps({"status": "error", "message": "No feature matrix found"})
+        all_features = features.get_feature_columns()
+        use_features = feature_subset if feature_subset else all_features
+        use_features = [f for f in use_features if f in fm.columns]
+
+        try:
+            result = experiments.run_optuna_search(
+                fm, use_features, method=method, n_trials=n_trials,
+            )
+        except Exception as e:
+            return json.dumps({"status": "error", "message": str(e)})
+
+        conn = storage.init_db()
+        storage.log_experiment(conn, result)
+        conn.close()
+
+        return json.dumps({
+            "experiment_id": result["experiment_id"],
+            "name": result["name"],
+            "method": result["method"],
+            "status": result["status"],
+            "overall_metrics": result.get("overall_metrics", {}),
+            "optuna": result.get("optuna", {}),
+        }, indent=2, default=str)
+
+    def compare_significance(experiment_id_a: str, experiment_id_b: str) -> str:
+        """Paired per-game significance test between two experiments."""
+        base = Path("data/experiments")
+        try:
+            result = experiments.compare_experiments_significance(
+                str(base / experiment_id_a), str(base / experiment_id_b)
+            )
+        except Exception as e:
+            return json.dumps({"status": "error", "message": str(e)})
+        return json.dumps(result, indent=2, default=str)
+
+    def save_finding(claim: str, evidence: str, confidence: str = "medium") -> str:
+        """Persist a settled finding to the structured findings table."""
+        conn = storage.init_db()
+        finding_id = storage.log_finding(
+            conn, claim=claim, evidence=evidence, confidence=confidence,
+            source_agent="meta_scientist",
+        )
+        conn.close()
+        return json.dumps({"status": "saved", "finding_id": finding_id})
+
+    def get_findings() -> str:
+        """Read all active findings from the structured store."""
+        conn = storage.init_db()
+        rows = conn.execute(
+            """SELECT claim, evidence, confidence, created_at FROM findings
+               WHERE status = 'active' ORDER BY created_at DESC LIMIT 50"""
+        ).fetchall()
+        conn.close()
+        return json.dumps({
+            "count": len(rows),
+            "findings": [
+                {"claim": r[0], "evidence": r[1], "confidence": r[2], "date": str(r[3])[:10]}
+                for r in rows
+            ],
+        }, indent=2)
+
     def run_feature_ablation(method: str = "gradient_boosting") -> str:
         """Run feature ablation study — test each feature group's contribution."""
         fm = storage.load_latest_parquet("data/features", "feature_matrix")
@@ -291,7 +361,7 @@ def _build_tools(config: dict) -> list[Tool]:
                 "properties": {
                     "method": {
                         "type": "string",
-                        "description": "Model method: logistic_regression, gradient_boosting, lightgbm, xgboost, neural_network"
+                        "description": "Model method: logistic_regression, gradient_boosting, lightgbm, xgboost, neural_network, catboost, tabpfn"
                     },
                     "feature_subset": {
                         "type": "array",
@@ -351,6 +421,63 @@ def _build_tools(config: dict) -> list[Tool]:
             input_schema={"type": "object", "properties": {}},
             func=analyze_prediction_errors,
         ),
+        Tool(
+            name="run_hyperparameter_search",
+            description="Run an Optuna hyperparameter search (TPE + pruning) for a method, then a full experiment with the best params. MUCH more efficient than manually trying parameter values one experiment at a time — prefer this over manual grid walking.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "description": "One of: logistic_regression, gradient_boosting, lightgbm, xgboost, catboost"
+                    },
+                    "n_trials": {
+                        "type": "integer",
+                        "description": "Number of Optuna trials (default 30; use 10-20 for slow methods)"
+                    },
+                    "feature_subset": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional: specific feature columns. If omitted, uses all."
+                    },
+                },
+                "required": ["method"]
+            },
+            func=run_hyperparameter_search,
+        ),
+        Tool(
+            name="compare_significance",
+            description="Paired per-game significance test between two experiments' out-of-fold predictions. USE THIS before claiming one model beats another — small log-loss differences are usually noise. Only claim improvement when b_significantly_better is true.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "experiment_id_a": {"type": "string", "description": "Baseline/champion experiment ID"},
+                    "experiment_id_b": {"type": "string", "description": "Challenger experiment ID"},
+                },
+                "required": ["experiment_id_a", "experiment_id_b"]
+            },
+            func=compare_significance,
+        ),
+        Tool(
+            name="save_finding",
+            description="Record a durable, settled scientific finding to the structured findings database (e.g. 'ensembling consistently hurts on this dataset'). Findings persist across runs and prevent re-litigating settled questions. Use for conclusions backed by significance tests, not hunches.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "claim": {"type": "string", "description": "One-sentence claim"},
+                    "evidence": {"type": "string", "description": "Experiment IDs and numbers supporting it"},
+                    "confidence": {"type": "string", "description": "low | medium | high"},
+                },
+                "required": ["claim", "evidence"]
+            },
+            func=save_finding,
+        ),
+        Tool(
+            name="get_findings",
+            description="Read all settled findings from the structured findings database. Call early — do not re-test settled questions.",
+            input_schema={"type": "object", "properties": {}},
+            func=get_findings,
+        ),
     ]
 
 
@@ -367,14 +494,23 @@ Your job is to **design experiments, run them, compare results, and converge on 
 4. **Compare results** using proper scoring rules (log loss, Brier score)
 5. **Draw conclusions** with evidence about which method works best and why
 
-## Experiment strategy (run in this order if no history exists):
-1. **Logistic Regression** (baseline) — simple, interpretable
-2. **Gradient Boosting** — captures nonlinear interactions
-3. **LightGBM** — fast, often best on tabular data
-4. **XGBoost** — another strong tree method
-5. **Neural Network** — can capture complex patterns
-6. **Feature ablation** — which features actually matter?
-7. **Ensemble** — combine the best methods
+## Available methods:
+- Classic: logistic_regression, gradient_boosting, lightgbm, xgboost, neural_network
+- **catboost** — ordered boosting, often best-in-class on small tabular data
+- **tabpfn** — TabPFN v2 tabular foundation model (pretrained transformer).
+  No hyperparameters. Slow per fit (CPU) — use n_splits default, don't tune it.
+  Early evidence on this dataset is very promising — verify against the champion
+  on identical folds with compare_significance.
+
+## Modern workflow (prefer this over manual parameter walking):
+1. **get_findings** + **read_scientist_history** — what is already settled?
+2. **run_hyperparameter_search** (Optuna) instead of manually trying C values one
+   at a time — 30 trials of TPE search cost one tool call
+3. **compare_significance(champion, challenger)** before claiming ANY improvement.
+   Log-loss differences under ~0.005 on this dataset are almost always noise
+   (a 0.617-vs-0.616 "improvement" has p≈0.55).
+4. **save_finding** when a question is SETTLED (backed by a significance test) so
+   future runs never re-test it
 
 ## After running experiments:
 - Compare all methods on the SAME test data (time-series CV ensures this)
@@ -387,6 +523,8 @@ Your job is to **design experiments, run them, compare results, and converge on 
 - Never compare models trained on different data splits
 - Log loss < 0.69 means better than random; beating the market (~0.66-0.68) is the real goal
 - If previous experiments exist, don't repeat them — build on them
+- NEVER promote a challenger on raw log loss alone — require compare_significance
+  to report b_significantly_better=true, otherwise record it as a tie
 - Report both absolute performance AND improvement over baselines
 
 Be systematic, evidence-driven, and honest. If no method beats the market, say so.

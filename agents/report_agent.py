@@ -179,12 +179,28 @@ def _build_tools(config: dict) -> list[Tool]:
         except Exception as e:
             logger.warning(f"Prediction ledger write failed: {e}")
 
+        # Injury context: current per-team impact of likely-out players.
+        # The model can't see injuries yet (no training archive), so surface
+        # them as a caution flag on each edge.
+        team_impact = {}
+        try:
+            from sources import espn_injuries as inj_mod
+            injuries = storage.load_latest_parquet("data/raw", "injuries")
+            if not injuries.empty and "impact_score" in injuries.columns:
+                relevant = injuries[injuries["status"].isin(
+                    inj_mod.OUT_STATUSES | inj_mod.QUESTIONABLE_STATUSES)]
+                team_impact = inj_mod.team_injury_impact(relevant)
+        except Exception as e:
+            logger.warning(f"Injury annotation failed: {e}")
+
         # Prepare result
         edges_list = []
         for _, row in edges_df.iterrows():
             edges_list.append({
                 "home_team": row["HOME_TEAM"],
                 "away_team": row["AWAY_TEAM"],
+                "home_injury_impact": team_impact.get(row["HOME_TEAM"], 0.0),
+                "away_injury_impact": team_impact.get(row["AWAY_TEAM"], 0.0),
                 "model_prob": row["model_prob"],
                 "market_prob": row["market_prob"],
                 "edge": row["edge"],
